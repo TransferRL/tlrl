@@ -14,6 +14,7 @@ import traceback
 
 
 NUM_RAND_INSTANCES = 5000
+NUM_REAL_INSTANCES = 5000
 
 ENV_MAP = {
     "2d_mountain_car": MountainCarEnv(),
@@ -32,14 +33,12 @@ def get_rand_instance(env):
     state = env.observation_space.sample()
     env.set_state(state)
     action = env.action_space.sample()
-    print(state, action)
     next_state, reward, done, info = env.step(action)
     return [state, action, next_state, reward, done]
 
 
 def generate_optimal_samples(env, modelpath):
     act = deepq.load(modelpath)
-    print(act._act_params)
     q_values_graph = deepq.build_graph.build_q_values(**act._act_params)
 
     replay_memory = []  # reset
@@ -50,7 +49,7 @@ def generate_optimal_samples(env, modelpath):
             action = act(obs[None])[0]
             q_values = q_values_graph(obs[None])
             n_obs, rew, done, _ = env.step(action)
-            print([obs, action, n_obs, rew, done, q_values[0][action]])
+            # print([obs, action, n_obs, rew, done, q_values[0][action]])
             result.append([obs, action, n_obs, rew, done, q_values[0][action]])
             obs = n_obs
         replay_memory.append(result)
@@ -126,11 +125,41 @@ def process_optimal_ins():
     print("Done!")
     print("==============================")
 
+
+def process_real_ins():
+
+    print("==============================")
+    print("Generating realistic instances...")
+    # Generate optimals
+    # names = ["2d_mountain_car", "acrobot"]
+    # envs = [MountainCarEnv(), CartPoleEnv()]
+    for name, env in ENV_MAP.items():
+        try:
+            file_path = "../data/" + name + "/realistic_instances.pkl"
+            if os.path.exists(file_path): continue
+            print("Generating realistic samples  " + env.name)
+            env.reset()
+            results = []
+            for j in range(NUM_REAL_INSTANCES):
+                env.reset()
+                state = env.state
+                action = env.action_space.sample()
+                next_state, reward, done, info = env.step(action)
+                results.append([state, action, next_state, reward, done])
+            with open(file_path, "wb+") as f:
+                cPickcle.dump(results, f)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+    print("Done!")
+    print("==============================")
+
 def main():
     train_source_tasks()
 
     process_random_ins()
     process_optimal_ins()
+    process_real_ins()
 
 
 
