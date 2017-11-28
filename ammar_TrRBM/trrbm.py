@@ -226,17 +226,18 @@ class RBM(object):
 
         self.compute_err = v1_err + v2_err
 
-    def v2_predict(self,v1_input):
+    def v2_predict(self, v1_input):
 
         # mean field
-        #v2_predictions = self.prop_v1h_v2(v1_inputs, self.h)
+        # v2_predictions = self.prop_v1h_v2(v1_inputs, self.h)
+        return self.prop_v1h_v2(v1_input, self.final_h)
         # sample
-        v1_input_list = np.split(v1_input, self.n_batches)
-        v2_predictions = []
-        for i in range(self.n_batches):
-            v2_prediction = self.sample_v2_given_v1h(self.v1_input, self.final_h)
-            v2_predictions.append(self.tf_session.run(v2_prediction,feed_dict={self.v1_input: v1_input_list[i], self.v2_input: np.zeros([self.batch_size,self.v2_size])}))
-        return np.stack(v2_predictions).reshape(-1,self.v2_size)
+        # v1_input_list = np.split(v1_input, self.n_batches)
+        # v2_predictions = []
+        # for i in range(self.n_batches):
+        #     v2_prediction = self.sample_v2_given_v1h(self.v1_input, self.final_h)
+        #     v2_predictions.append(self.tf_session.run(v2_prediction,feed_dict={self.v1_input: v1_input_list[i], self.v2_input: np.zeros([self.batch_size,self.v2_size])}))
+        # return np.stack(v2_predictions).reshape(-1,self.v2_size)
 
 
 def main():
