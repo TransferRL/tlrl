@@ -147,27 +147,28 @@ class DeepQ(object):
     
     
     def __init__(self,
-              env,
-              q_func,
-              lr=5e-4,
-              max_timesteps=100000,
-              buffer_size=50000,
-              exploration_fraction=0.1,
-              exploration_final_eps=0.02,
-              train_freq=1,
-              batch_size=32,
-              print_freq=100,
-              checkpoint_freq=10000,
-              learning_starts=1000,
-              gamma=1.0,
-              target_network_update_freq=500,
-              prioritized_replay=False,
-              prioritized_replay_alpha=0.6,
-              prioritized_replay_beta0=0.4,
-              prioritized_replay_beta_iters=None,
-              prioritized_replay_eps=1e-6,
-              param_noise=False,
-              callback=None):
+                 env,
+                 q_func,
+                 lr=5e-4,
+                 max_timesteps=100000,
+                 buffer_size=50000,
+                 exploration_fraction=0.1,
+                 exploration_final_eps=0.02,
+                 train_freq=1,
+                 batch_size=32,
+                 print_freq=100,
+                 checkpoint_freq=10000,
+                 learning_starts=1000,
+                 gamma=1.0,
+                 target_network_update_freq=500,
+                 prioritized_replay=False,
+                 prioritized_replay_alpha=0.6,
+                 prioritized_replay_beta0=0.4,
+                 prioritized_replay_beta_iters=None,
+                 prioritized_replay_eps=1e-6,
+                 param_noise=False,
+                 callback=None,
+                 max_episodes=100):
 
         self.env = env
         self.q_func=q_func
@@ -190,7 +191,7 @@ class DeepQ(object):
         self.prioritized_replay_eps=prioritized_replay_eps
         self.param_noise=param_noise
         self.callback=callback
-    
+        self.max_episodes = max_episodes
         # Create all the functions necessary to train the model
 
         self.sess = tf.Session()
@@ -199,7 +200,7 @@ class DeepQ(object):
         # capture the shape outside the closure so that the env object is not serialized
         # by cloudpickle when serializing make_obs_ph
         self.observation_space_shape = env.observation_space.shape
-    
+
     def make_obs_ph(self,name):
         return U.BatchInput(self.observation_space_shape, name=name)
 
@@ -222,9 +223,9 @@ class DeepQ(object):
         }
 
         self.act = ActWrapper(self.act, self.act_params)
-        
+
         return 'make_build_train() complete'
-        
+
     def initialize(self):
         # Create the replay buffer
         if self.prioritized_replay:
@@ -245,10 +246,10 @@ class DeepQ(object):
         # Initialize the parameters and copy them to the target network.
         U.initialize()
         self.update_target()
-        
+
         return 'initialize() complete'
-    
-    def transfer_pretrain(self, 
+
+    def transfer_pretrain(self,
                           transferred_instances
                          ,epochs
                          ,tr_batch_size
@@ -259,28 +260,28 @@ class DeepQ(object):
         the deepq train network with transferred instances. These instances must be
         zip([s],[a],[r],[s']) tuples mapped over to the same state and action spaces as the target
         task environment.
-        
+
         No output - just updates parameters of train and target networks.
         """
         # TODO - function that trains self.act and self.train using mapped instances
         done = False
         # pack all instances into replay buffer
-        for obs, action, rew, new_obs in transferred_instances:            
+        for obs, action, rew, new_obs in transferred_instances:
             self.replay_buffer.add(obs, action, rew, new_obs, float(done))
-        
+
         for epoch in range(epochs):
             obses_t, actions, rewards, obses_tp1, dones = self.replay_buffer.sample(tr_batch_size)
             weights, batch_idxes = np.ones_like(rewards), None
             td_errors = self.train(obses_t, actions, rewards, obses_tp1, dones, weights)
-            
+
         self.update_target()
-        
+
         if keep_in_replay_buffer is not True:
             self.replay_buffer = ReplayBuffer(self.buffer_size)
-        
+
         return 'transfer_pretrain() complete'
 
-    
+
     def task_train(self):
         self.episode_rewards = [0.0]
         self.episode_steps = [0.0]
@@ -360,11 +361,14 @@ class DeepQ(object):
                         U.save_state(model_file)
                         model_saved = True
                         self.saved_mean_reward = mean_100ep_reward
+
+                if num_episodes >= self.max_episodes:
+                    break
+
             if model_saved:
                 if self.print_freq is not None:
                     logger.log("Restored model with mean reward: {}".format(self.saved_mean_reward))
                 U.load_state(model_file)
-
         return self.act, self.episode_rewards, self.episode_steps
     
     
