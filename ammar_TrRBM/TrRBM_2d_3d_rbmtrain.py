@@ -4,26 +4,13 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from matplotlib import pyplot as plt
-import gym
-from tqdm import tqdm
-import collections
-import baselines.common.tf_util as U
-
-import sys
-
-sys.path.append('../taylor_master/lib/env/')
-from threedmountain_car import ThreeDMountainCarEnv
-
-sys.path.append('../baselines/baselines/')
-import deepq
 
 import deepq_mod
+import baselines.deepq as deepq
 import trrbm
-import utils
-from envs import ENVS_DICTIONARY
-
 import pickle
-import datetime
+
+from envs import ENVS_DICTIONARY
 
 N_MAPPED = 5000
 target_env = ENVS_DICTIONARY['3DMountainCar']()
@@ -48,7 +35,7 @@ params_dictionary["ini_steps_retrain"] = 50
 params_dictionary["TrRBM_hidden_units"] = 150
 params_dictionary["TrRBM_batch_size"] = 100
 params_dictionary["TrRBM_learning_rate"] = 0.000001
-params_dictionary["TrRBM_num_epochs"] = 200
+params_dictionary["TrRBM_num_epochs"] = 20
 params_dictionary["TrRBM_n_factors"] = 100
 params_dictionary["TrRBM_k"] = 1
 params_dictionary["TrRBM_use_tqdm"] = True
@@ -85,7 +72,7 @@ def unpack_samples(samples, action_encoder, fit_encoder=True):
             unpacked.append(np.concatenate([state, state_prime, action]))
 
     if action_encoder is not None:
-        if fit_encoder == True:
+        if fit_encoder:
             action_encoder.fit(np.array(actions).reshape(-1, 1))
         actions = action_encoder.transform(np.array(actions).reshape(-1, 1)).astype(float)
         unpacked = np.concatenate([unpacked, actions], axis=1)
@@ -102,7 +89,7 @@ def unpack_episodes(episodes, action_encoder, fit_encoder=False):
     for episode in episodes:
         for sample in episode:
             samples.append(sample)
-    _, unpacked = unpack_samples(samples, action_encoder, fit_encoder=False)
+    _, unpacked = unpack_samples(samples, action_encoder, fit_encoder=fit_encoder)
     return unpacked
 
 
@@ -171,11 +158,10 @@ def plot_with_gp(X, y, title='', xlabel='', ylabel='', plt_lable='', color='b'):
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    #plt.show()
+    # plt.show()
 
 
 def train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True, max_episodes=100):
-
     # run multiple experiments with the same transfer instances
     model = deepq.models.mlp([64], layer_norm=True)
 
@@ -190,7 +176,7 @@ def train_dqn(target_states, target_actions, rewards, target_states_prime, with_
         print_freq=10,
         param_noise=False, max_episodes=max_episodes)
 
-        # use transferred tuples to learn initial target policy \pi_{T}^{o}
+    # use transferred tuples to learn initial target policy \pi_{T}^{o}
 
     dq.make_build_train()
 
@@ -210,9 +196,9 @@ def train_dqn(target_states, target_actions, rewards, target_states_prime, with_
 
 
 def main():
-    source_random_path = '../taylor_master/data/2d_instances.pkl'
-    target_random_path = '../taylor_master/data/3d_instances.pkl'
-    source_optimal_path = '../taylor_master/data/optimal_instances.pkl'
+    source_random_path = '../taylor_baseline/data/2d_instances.pkl'
+    target_random_path = '../taylor_baseline/data/3d_instances.pkl'
+    source_optimal_path = '../taylor_baseline/data/optimal_instances.pkl'
 
     # load source task random samples
     source_action_encoder, source_random = unpack_samples(load_samples(source_random_path), OneHotEncoder(sparse=False))
@@ -244,7 +230,6 @@ def main():
 
     # train the TrRBM model
     errs = rbm.train(source_random, target_random)
-
 
     if rbm.show_err_plt:
         plt.plot(range(len(rbm.cost)), rbm.cost)

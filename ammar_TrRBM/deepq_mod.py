@@ -1,10 +1,4 @@
-import sys
 from envs import ENVS_DICTIONARY
-
-sys.path.append('../baselines/baselines/')
-
-import deepq
-
 import os
 import tempfile
 
@@ -14,17 +8,18 @@ import cloudpickle
 import numpy as np
 
 import gym
+
 import baselines.common.tf_util as U
 from baselines import logger
 from baselines.common.schedules import LinearSchedule
 from baselines import deepq
 from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
-
 """
 *Copied from OpenAI Baselines deeq implementation
 https://github.com/TransferRL/baselines/blob/master/baselines/deepq/simple.py
 """
+
 
 class ActWrapper(object):
     def __init__(self, act, act_params):
@@ -69,9 +64,8 @@ class ActWrapper(object):
                 model_data = f.read()
         with open(path, "wb") as f:
             cloudpickle.dump((model_data, self._act_params), f)
-            
-            
-            
+
+
 """
 *All code below copied and MODIFIED from OpenAI Baselines deeq implementation
 https://github.com/TransferRL/baselines/blob/master/baselines/deepq/simple.py
@@ -144,8 +138,7 @@ class DeepQ(object):
         Wrapper over act function. Adds ability to save it and load it.
         See header of baselines/deepq/categorical.py for details on the act function.
     """
-    
-    
+
     def __init__(self,
                  env,
                  q_func,
@@ -171,26 +164,26 @@ class DeepQ(object):
                  max_episodes=100):
 
         self.env = env
-        self.q_func=q_func
-        self.lr=lr
-        self.max_timesteps=max_timesteps
-        self.buffer_size=buffer_size
-        self.exploration_fraction=exploration_fraction
-        self.exploration_final_eps=exploration_final_eps
-        self.train_freq=train_freq
-        self.batch_size=batch_size
-        self.print_freq=print_freq
-        self.checkpoint_freq=checkpoint_freq
-        self.learning_starts=learning_starts
-        self.gamma=gamma
-        self.target_network_update_freq=target_network_update_freq
-        self.prioritized_replay=prioritized_replay
-        self.prioritized_replay_alpha=prioritized_replay_alpha
-        self.prioritized_replay_beta0=prioritized_replay_beta0
-        self.prioritized_replay_beta_iters=prioritized_replay_beta_iters
-        self.prioritized_replay_eps=prioritized_replay_eps
-        self.param_noise=param_noise
-        self.callback=callback
+        self.q_func = q_func
+        self.lr = lr
+        self.max_timesteps = max_timesteps
+        self.buffer_size = buffer_size
+        self.exploration_fraction = exploration_fraction
+        self.exploration_final_eps = exploration_final_eps
+        self.train_freq = train_freq
+        self.batch_size = batch_size
+        self.print_freq = print_freq
+        self.checkpoint_freq = checkpoint_freq
+        self.learning_starts = learning_starts
+        self.gamma = gamma
+        self.target_network_update_freq = target_network_update_freq
+        self.prioritized_replay = prioritized_replay
+        self.prioritized_replay_alpha = prioritized_replay_alpha
+        self.prioritized_replay_beta0 = prioritized_replay_beta0
+        self.prioritized_replay_beta_iters = prioritized_replay_beta_iters
+        self.prioritized_replay_eps = prioritized_replay_eps
+        self.param_noise = param_noise
+        self.callback = callback
         self.max_episodes = max_episodes
         # Create all the functions necessary to train the model
 
@@ -201,7 +194,7 @@ class DeepQ(object):
         # by cloudpickle when serializing make_obs_ph
         self.observation_space_shape = env.observation_space.shape
 
-    def make_obs_ph(self,name):
+    def make_obs_ph(self, name):
         return U.BatchInput(self.observation_space_shape, name=name)
 
     def make_build_train(self):
@@ -233,15 +226,15 @@ class DeepQ(object):
             if self.prioritized_replay_beta_iters is None:
                 self.prioritized_replay_beta_iters = self.max_timesteps
             self.beta_schedule = LinearSchedule(self.prioritized_replay_beta_iters,
-                                           initial_p=self.prioritized_replay_beta0,
-                                           final_p=1.0)
+                                                initial_p=self.prioritized_replay_beta0,
+                                                final_p=1.0)
         else:
             self.replay_buffer = ReplayBuffer(self.buffer_size)
             self.beta_schedule = None
         # Create the schedule for exploration starting from 1.
         self.exploration = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.max_timesteps),
-                                     initial_p=1.0,
-                                     final_p=self.exploration_final_eps)
+                                          initial_p=1.0,
+                                          final_p=self.exploration_final_eps)
 
         # Initialize the parameters and copy them to the target network.
         U.initialize()
@@ -251,10 +244,10 @@ class DeepQ(object):
 
     def transfer_pretrain(self,
                           transferred_instances
-                         ,epochs
-                         ,tr_batch_size
-                         ,keep_in_replay_buffer=True
-                         ):
+                          , epochs
+                          , tr_batch_size
+                          , keep_in_replay_buffer=True
+                          ):
         """
         This is a custom function from University of Toronto group to first pretrain
         the deepq train network with transferred instances. These instances must be
@@ -281,7 +274,6 @@ class DeepQ(object):
 
         return 'transfer_pretrain() complete'
 
-
     def task_train(self):
         self.episode_rewards = [0.0]
         self.episode_steps = [0.0]
@@ -306,7 +298,8 @@ class DeepQ(object):
                     # policy is comparable to eps-greedy exploration with eps = exploration.value(t).
                     # See Appendix C.1 in Parameter Space Noise for Exploration, Plappert et al., 2017
                     # for detailed explanation.
-                    update_param_noise_threshold = -np.log(1. - self.exploration.value(t) + self.exploration.value(t) / float(self.env.action_space.n))
+                    update_param_noise_threshold = -np.log(
+                        1. - self.exploration.value(t) + self.exploration.value(t) / float(self.env.action_space.n))
                     kwargs['reset'] = reset
                     kwargs['update_param_noise_threshold'] = update_param_noise_threshold
                     kwargs['update_param_noise_scale'] = True
@@ -353,11 +346,11 @@ class DeepQ(object):
                     logger.dump_tabular()
 
                 if (self.checkpoint_freq is not None and t > self.learning_starts and
-                        num_episodes > 100 and t % self.checkpoint_freq == 0):
+                            num_episodes > 100 and t % self.checkpoint_freq == 0):
                     if self.saved_mean_reward is None or mean_100ep_reward > self.saved_mean_reward:
                         if self.print_freq is not None:
                             logger.log("Saving model due to mean reward increase: {} -> {}".format(
-                                       self.saved_mean_reward, mean_100ep_reward))
+                                self.saved_mean_reward, mean_100ep_reward))
                         U.save_state(model_file)
                         model_saved = True
                         self.saved_mean_reward = mean_100ep_reward
@@ -370,9 +363,8 @@ class DeepQ(object):
                     logger.log("Restored model with mean reward: {}".format(self.saved_mean_reward))
                 U.load_state(model_file)
         return self.act, self.episode_rewards, self.episode_steps
-    
-    
-    def get_q_values(self,obs):
+
+    def get_q_values(self, obs):
         '''
         Input:
             obs should be a numpy array with shape (?,state_space)
@@ -381,28 +373,28 @@ class DeepQ(object):
         '''
         return self.debug['q_values'](obs)
 
-    
+
 def main():
-    
     env = ENVS_DICTIONARY['3DMountainCar']()
-    
+
     model = deepq.models.mlp([64], layer_norm=True)
     dq = DeepQ(
-            env,
-            q_func=model,
-            lr=1e-3,
-            max_timesteps=100000,
-            buffer_size=50000,
-            exploration_fraction=0.1,
-            exploration_final_eps=0.1,
-            print_freq=10,
-            param_noise=True)
-    
+        env,
+        q_func=model,
+        lr=1e-3,
+        max_timesteps=100000,
+        buffer_size=50000,
+        exploration_fraction=0.1,
+        exploration_final_eps=0.1,
+        print_freq=10,
+        param_noise=True)
+
     dq.make_build_train()
     dq.initialize()
     act, episode_rewards, episode_steps = dq.task_train()
-    
+
     print('done!')
-    
+
+
 if __name__ == '__main__':
     main()

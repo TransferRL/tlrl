@@ -36,9 +36,9 @@ def gen_batches(data, batch_size):
 class RBM(object):
     """ represents a 3-way rbm """
 
-    def __init__(self, name, v1_size, h_size, v2_size, n_data, batch_size, num_epochs=100, learning_rate=0.1, k=1, use_tqdm=True, show_err_plt=True, n_factors=50):
-        
-        
+    def __init__(self, name, v1_size, h_size, v2_size, n_data, batch_size, num_epochs=100, learning_rate=0.1, k=1,
+                 use_tqdm=True, show_err_plt=True, n_factors=50):
+
         with tf.name_scope("rbm_" + name):
             self.v1_size = v1_size
             self.v2_size = v2_size
@@ -52,14 +52,14 @@ class RBM(object):
             self.fweights_h = tf.Variable(
                 tf.truncated_normal([h_size, n_factors],
                                     stddev=1.0 / math.sqrt(float((v1_size + v2_size) / 2))), name="weights")
-            self.h_bias = tf.Variable(tf.zeros([1, h_size]), name="h_bias",dtype=tf.float32)
-            self.v1_bias = tf.Variable(tf.zeros([1, v1_size]), name="v1_bias",dtype=tf.float32)
-            self.v1_var = tf.constant(np.ones([v1_size]), name="v1_var",dtype=tf.float32)
-            self.v2_bias = tf.Variable(tf.zeros([1, v2_size]), name="v1_bias",dtype=tf.float32)
-            self.v2_var = tf.constant(np.ones([v2_size]), name="v1_var",dtype=tf.float32)
+            self.h_bias = tf.Variable(tf.zeros([1, h_size]), name="h_bias", dtype=tf.float32)
+            self.v1_bias = tf.Variable(tf.zeros([1, v1_size]), name="v1_bias", dtype=tf.float32)
+            self.v1_var = tf.constant(np.ones([v1_size]), name="v1_var", dtype=tf.float32)
+            self.v2_bias = tf.Variable(tf.zeros([1, v2_size]), name="v1_bias", dtype=tf.float32)
+            self.v2_var = tf.constant(np.ones([v2_size]), name="v1_var", dtype=tf.float32)
 
             self.batch_size = batch_size
-            self.n_batches = n_data // batch_size # assume it will be an integer
+            self.n_batches = n_data // batch_size  # assume it will be an integer
 
             self.num_epochs = num_epochs
             self.learning_rate = learning_rate
@@ -73,19 +73,20 @@ class RBM(object):
 
             self.compute_err = None  # filled in reconstruction error
             self.tf_session = None
-            
+
             self.cost = []
 
             self.final_h = None
 
     def _prop_helper(self, a, b, a_weights, b_weights, t_weights):
         """a and b should be matricies of row vectors"""
-        inter = tf.multiply(tf.matmul(a, a_weights),tf.matmul(b, b_weights))
-        return tf.matmul(inter,tf.transpose(t_weights))
+        inter = tf.multiply(tf.matmul(tf.cast(a, tf.float32), a_weights), tf.matmul(b, b_weights))
+        return tf.matmul(inter, tf.transpose(t_weights))
 
     def prop_v1v2_h(self, v1, v2):
         """ P(h|v1,v2) """
-        return tf.nn.sigmoid(self._prop_helper(v1, v2, self.fweights_v1, self.fweights_v2, self.fweights_h) + self.h_bias)
+        return tf.nn.sigmoid(
+            self._prop_helper(v1, v2, self.fweights_v1, self.fweights_v2, self.fweights_h) + self.h_bias)
 
     def prop_v1h_v2(self, v1, h):
         """ P(v2|v1,h) """
@@ -98,14 +99,16 @@ class RBM(object):
     def sample_v1_given_v2h(self, v2, h):
         """ generate sample of v1 from v2 and h"""
         dist = tf.contrib.distributions.Normal(tf.cast(self.prop_v2h_v1(v2, h), tf.float32),
-                                               tf.cast(tf.tile(tf.expand_dims(self.v1_var, 0), [v2.get_shape().as_list()[0], 1]),
+                                               tf.cast(tf.tile(tf.expand_dims(self.v1_var, 0),
+                                                               [v2.get_shape().as_list()[0], 1]),
                                                        tf.float32))
         return tf.reduce_sum(dist.sample(1), 0)
 
     def sample_v2_given_v1h(self, v1, h):
         """ generate sample of v1 from v2 and h"""
         dist = tf.contrib.distributions.Normal(tf.cast(self.prop_v1h_v2(v1, h), tf.float32),
-                                               tf.cast(tf.tile(tf.expand_dims(self.v2_var, 0), [v1.get_shape().as_list()[0], 1]),
+                                               tf.cast(tf.tile(tf.expand_dims(self.v2_var, 0),
+                                                               [v1.get_shape().as_list()[0], 1]),
                                                        tf.float32))
         return tf.reduce_sum(dist.sample(1), 0)
 
@@ -116,8 +119,8 @@ class RBM(object):
     @staticmethod
     def get_delta_products(t, a, b, a_weights, b_weights):
         """ inputs are normalized feature vectors (i.e. v1/v1_var)"""
-        inter = tf.multiply(tf.matmul(a,a_weights),tf.matmul(b,b_weights))
-        return tf.matmul(tf.transpose(t),inter)
+        inter = tf.multiply(tf.matmul(a, a_weights), tf.matmul(b, b_weights))
+        return tf.matmul(tf.transpose(t), inter)
 
     def gibbs(self, v1, h, v2):
 
@@ -170,7 +173,7 @@ class RBM(object):
             v2_input_list = np.split(v2_input, self.n_batches)
 
             self.tf_session.run(updates, feed_dict={self.v1_input: v1_input_list[i], self.v2_input: v2_input_list[i]})
-            err_tot += self.get_cost(v1_input_list[i],v2_input_list[i])
+            err_tot += self.get_cost(v1_input_list[i], v2_input_list[i])
         return err_tot / (self.batch_size * self.n_batches)
 
     def pcd_k(self):
@@ -187,18 +190,30 @@ class RBM(object):
         self.final_h = mcmc_h
 
         # update fweights_v1
-        fw_v1_positive_grad = self.get_delta_products(tf.divide(self.v1_input,self.v1_var), start_h, tf.divide(self.v2_input,self.v2_var),self.fweights_h,self.fweights_v2) / self.batch_size
-        fw_v1_negative_grad = self.get_delta_products(tf.divide(mcmc_v1,self.v1_var), mcmc_h, tf.divide(mcmc_v2,self.v2_var),self.fweights_h,self.fweights_v2) / self.batch_size
+        fw_v1_positive_grad = self.get_delta_products(tf.divide(self.v1_input, self.v1_var), start_h,
+                                                      tf.divide(self.v2_input, self.v2_var), self.fweights_h,
+                                                      self.fweights_v2) / self.batch_size
+        fw_v1_negative_grad = self.get_delta_products(tf.divide(mcmc_v1, self.v1_var), mcmc_h,
+                                                      tf.divide(mcmc_v2, self.v2_var), self.fweights_h,
+                                                      self.fweights_v2) / self.batch_size
         self.fweights_v1 = self.fweights_v1.assign_add(self.learning_rate * (fw_v1_positive_grad - fw_v1_negative_grad))
 
         # update fweights_v2
-        fw_v2_positive_grad = self.get_delta_products(tf.divide(self.v2_input,self.v2_var), start_h, tf.divide(self.v1_input,self.v1_var),self.fweights_h,self.fweights_v1) / self.batch_size
-        fw_v2_negative_grad = self.get_delta_products(tf.divide(mcmc_v2,self.v2_var), mcmc_h, tf.divide(mcmc_v1,self.v1_var),self.fweights_h,self.fweights_v1) / self.batch_size
+        fw_v2_positive_grad = self.get_delta_products(tf.divide(self.v2_input, self.v2_var), start_h,
+                                                      tf.divide(self.v1_input, self.v1_var), self.fweights_h,
+                                                      self.fweights_v1) / self.batch_size
+        fw_v2_negative_grad = self.get_delta_products(tf.divide(mcmc_v2, self.v2_var), mcmc_h,
+                                                      tf.divide(mcmc_v1, self.v1_var), self.fweights_h,
+                                                      self.fweights_v1) / self.batch_size
         self.fweights_v2 = self.fweights_v2.assign_add(self.learning_rate * (fw_v2_positive_grad - fw_v2_negative_grad))
 
         # update fweights_h
-        fw_h_positive_grad = self.get_delta_products(start_h, tf.divide(self.v2_input,self.v2_var), tf.divide(self.v1_input,self.v1_var),self.fweights_v2,self.fweights_v1) / self.batch_size
-        fw_h_negative_grad = self.get_delta_products(mcmc_h, tf.divide(mcmc_v2,self.v2_var), tf.divide(mcmc_v1,self.v1_var),self.fweights_v2,self.fweights_v1) / self.batch_size
+        fw_h_positive_grad = self.get_delta_products(start_h, tf.divide(self.v2_input, self.v2_var),
+                                                     tf.divide(self.v1_input, self.v1_var), self.fweights_v2,
+                                                     self.fweights_v1) / self.batch_size
+        fw_h_negative_grad = self.get_delta_products(mcmc_h, tf.divide(mcmc_v2, self.v2_var),
+                                                     tf.divide(mcmc_v1, self.v1_var), self.fweights_v2,
+                                                     self.fweights_v1) / self.batch_size
         self.fweights_h = self.fweights_h.assign_add(self.learning_rate * (fw_h_positive_grad - fw_h_negative_grad))
 
         self.v1_bias = self.v1_bias.assign_add(self.learning_rate * tf.reduce_mean(self.v1_input - mcmc_v1, 0,
@@ -207,7 +222,6 @@ class RBM(object):
                                                                                    keep_dims=True))
 
         self.h_bias = self.h_bias.assign_add(self.learning_rate * tf.reduce_mean(start_h - mcmc_h, 0, keep_dims=True))
-
 
     def get_cost(self, v1_input, v2_input):
 
@@ -230,18 +244,22 @@ class RBM(object):
 
         # mean field
         # v2_predictions = self.prop_v1h_v2(v1_inputs, self.h)
-        return self.prop_v1h_v2(v1_input, self.final_h)
-        # sample
-        # v1_input_list = np.split(v1_input, self.n_batches)
-        # v2_predictions = []
-        # for i in range(self.n_batches):
-        #     v2_prediction = self.sample_v2_given_v1h(self.v1_input, self.final_h)
-        #     v2_predictions.append(self.tf_session.run(v2_prediction,feed_dict={self.v1_input: v1_input_list[i], self.v2_input: np.zeros([self.batch_size,self.v2_size])}))
-        # return np.stack(v2_predictions).reshape(-1,self.v2_size)
+        # return self.prop_v1h_v2(v1_input, self.final_h)
+
+        v1_input_list = np.split(v1_input, self.n_batches)
+        v2_predictions = []
+        for i in range(self.n_batches):
+            v2_prediction = self.tf_session.run(self.prop_v1h_v2(self.v1_input, self.final_h), {self.v1_input:
+                                                                                                v1_input_list[i],
+                                                                                                self.v2_input:
+                                                                                                    np.zeros((
+                                                                                                        self.batch_size,
+                                                                                                        self.v2_size))})
+            v2_predictions.append(v2_prediction)
+        return np.vstack(v2_predictions)
 
 
 def main():
-
     n_v1 = 30
     n_v2 = 30
     n_h = 60
@@ -265,22 +283,22 @@ def main():
     print(v1s.shape[0])
 
     rbm = RBM(name='rbm', v1_size=n_v1, h_size=n_h, v2_size=n_v2
-              , n_data = v1s.shape[0], batch_size=100, learning_rate=0.0000001,
-              num_epochs=500, n_factors=10)
+              , n_data=v1s.shape[0], batch_size=100, learning_rate=0.0000001,
+              num_epochs=100, n_factors=10)
     errs = rbm.train(v1s, v2s)
     print('getting predictions')
     print('v2s:', v2s[:3])
     v2_predictions = rbm.v2_predict(v1s)
     print('v2 preds:', v2_predictions[:3])
 
-    print('preds diff:',(v2_predictions - v2s).mean(axis=0))
+    print('preds diff:', (v2_predictions - v2s).mean(axis=0))
 
     rbm.tf_session.close()
-
 
     if rbm.show_err_plt:
         plt.plot(range(len(rbm.cost)), rbm.cost)
         plt.show()
+
 
 if __name__ == '__main__':
     main()
