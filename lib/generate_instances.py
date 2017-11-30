@@ -1,9 +1,10 @@
 import pickle as cPickcle
-from env import AcrobotEnv, MountainCarEnv, ThreeDMountainCarEnv, CartPoleEnv, ThreeDCartPoleEnv
+from env import AcrobotEnv, MountainCarEnv, ThreeDMountainCarEnv, CartPoleEnv, ThreeDCartPoleEnv, MazeEnv
 import numpy as np
 import deepq
 import os.path
 import traceback
+import gym
 
 # 2D MC -> 3D MC
 # 2D MC -> 2D Cartpole
@@ -16,17 +17,30 @@ import traceback
 NUM_RAND_INSTANCES = 5000
 NUM_REAL_INSTANCES = 5000
 
-ENV_MAP = {
+RAND_MAP = {
+    "2d_mountain_car": MountainCarEnv(),
+    "3d_mountain_car": ThreeDMountainCarEnv(),
+    "2d_cart_pole":CartPoleEnv(),
+    "3d_cart_pole": ThreeDCartPoleEnv()
+}
+
+R_MAP = {
     "2d_mountain_car": MountainCarEnv(),
     "3d_mountain_car": ThreeDMountainCarEnv(),
     "2d_cart_pole":CartPoleEnv(),
     "3d_cart_pole": ThreeDCartPoleEnv(),
-    "acrobot": AcrobotEnv()
+    "acrobot": AcrobotEnv(),
+    "2d_maze": MazeEnv(maze_size=(5,5)),
+    "breakout": gym.make("Breakout-ram-v0"),
+    "Pong": gym.make("Pong-ram-v0")
 }
 
 SOURCE_MAP = {
     "2d_mountain_car": MountainCarEnv(),
-    "acrobot": AcrobotEnv()
+    "acrobot": AcrobotEnv(),
+    "2d_maze": MazeEnv(maze_size=(5,5)),
+    "breakout": gym.make("Breakout-ram-v0"),
+    "Pong": gym.make("Pong-ram-v0")
 }
 def get_rand_instance(env):
     env.reset()
@@ -86,14 +100,16 @@ def process_random_ins():
     names = ["2d_mountain_car", "3d_mountain_car", "2d_cart_pole", "3d_cart_pole", "acrobot"]
     envs = [MountainCarEnv(), ThreeDMountainCarEnv(), CartPoleEnv(), ThreeDCartPoleEnv(), AcrobotEnv()]
     # Generate random instances:
-    for name, env in ENV_MAP.items():
+    for name, env in RAND_MAP.items():
         result = []
-        print("Generating random samples  " + env.name)
+        print("Generating random samples  " + name)
         try:
             file_path = "../data/" + name + "/random_instances.pkl"
             if os.path.exists(file_path): continue
             for _ in range(NUM_RAND_INSTANCES):
-                result.append(get_rand_instance(env))
+                t = get_rand_instance(env)
+                print(t)
+                result.append(t)
             with open(file_path, "wb+") as f:
                 cPickcle.dump(result, f)
         except Exception as e:
@@ -115,10 +131,11 @@ def process_optimal_ins():
     for name, env in SOURCE_MAP.items():
         try:
             file_path = "../data/" + name + "/optimal_instances.pkl"
-            if os.path.exists(file_path): continue
-            print("Generating optimal samples  " + env.name)
+            model_path = "../models/" + name + "_dqn.pkl"
+            if not os.path.exists(model_path) or os.path.exists(file_path): continue
+            print("Generating optimal samples  " + name)
             with open(file_path, "wb+") as f:
-                cPickcle.dump(generate_optimal_samples(env, "../models/" + name + "_dqn.pkl"), f)
+                cPickcle.dump(generate_optimal_samples(env, modelpath=model_path), f)
         except Exception as e:
             print(e)
             traceback.print_exc()
@@ -133,19 +150,22 @@ def process_real_ins():
     # Generate optimals
     # names = ["2d_mountain_car", "acrobot"]
     # envs = [MountainCarEnv(), CartPoleEnv()]
-    for name, env in ENV_MAP.items():
+    for name, env in R_MAP.items():
         try:
             file_path = "../data/" + name + "/realistic_instances.pkl"
             if os.path.exists(file_path): continue
-            print("Generating realistic samples  " + env.name)
+            print("Generating realistic samples  " + name)
             env.reset()
             results = []
+            state = env.reset()
             for j in range(NUM_REAL_INSTANCES):
-                env.reset()
-                state = env.state
                 action = env.action_space.sample()
                 next_state, reward, done, info = env.step(action)
                 results.append([state, action, next_state, reward, done])
+                if done:
+                    state = env.reset()
+                else:
+                    state = next_state
             with open(file_path, "wb+") as f:
                 cPickcle.dump(results, f)
         except Exception as e:
@@ -155,10 +175,10 @@ def process_real_ins():
     print("==============================")
 
 def main():
-    train_source_tasks()
+    # train_source_tasks()
 
     process_random_ins()
-    process_optimal_ins()
+    # process_optimal_ins()
     process_real_ins()
 
 
@@ -166,15 +186,21 @@ def main():
 
 def test_generated():
 
-
-    names = ["2d_mountain_car", "3d_mountain_car", "2d_cart_pole", "3d_cart_pole", "acrobot"]
     # Read example
     # Data format:
     # Arrays of instances. Each instance:
     # [state, action, next_state, reward, done]
     # Print random instances:
-    for name in names:
+    for name, env in RAND_MAP.items():
         with open("../data/" + name + "/random_instances.pkl", "rb") as f:
+            result = cPickcle.load(f)
+        print("------  " + name + "   -------")
+        print(result[:3])
+        print("------------------------------------")
+
+
+    for name, env in R_MAP.items():
+        with open("../data/" + name + "/realistic_instances.pkl", "rb") as f:
             result = cPickcle.load(f)
         print("------  " + name + "   -------")
         print(result[:3])
@@ -185,14 +211,16 @@ def test_generated():
     # Arrays of episodes data. Each episode consists all instances.
 
     # Print optimals
-    names = ["2d_mountain_car", "acrobot"]
-    for name in names:
-        with open("../data/" + name + "/optimal_instances.pkl") as f:
-            episodes = cPickcle.load(f)
-            lengths = [len(episode) for episode in episodes]
+    for name, env in SOURCE_MAP.items():
         print("------  " + name + "   -------")
-        print(np.asarray(lengths).sum())
-        print(episodes[-1][:10])
+        try:
+            with open("../data/" + name + "/optimal_instances.pkl", "rb") as f:
+                episodes = cPickcle.load(f)
+                lengths = [len(episode) for episode in episodes]
+            print(np.asarray(lengths).sum())
+            print(episodes[-1][:10])
+        except Exception as e:
+            print(e)
         print("------------------------------------")
 
 if __name__ == "__main__":

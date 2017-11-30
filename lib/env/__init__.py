@@ -9,3 +9,4 @@ from env.mountain_car import MountainCarEnv
 from env.pendulum import PendulumEnv
 from env.threedcartpole import ThreeDCartPoleEnv
 from env.threedmountain_car import ThreeDMountainCarEnv
+from env.gym_maze import MazeEnv
