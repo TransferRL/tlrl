@@ -1,0 +1,175 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2017
+%
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2017}
+
+\usepackage{nips_2017}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2017}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+
+\title{Deep Transfer for Model-Free Reinforcement Learning Using Autonomous Intertask Mappings and Q-Learning}
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Name \\
+  University of Toronto \\
+  Toronto, Ontario, Canada \\
+  \texttt{} \\
+  \And
+  Name \\
+  University of Toronto \\
+  Toronto, Ontario, Canada \\
+  \texttt{} \\
+  \And
+  Name \\
+  University of Toronto \\
+  Toronto, Ontario, Canada \\
+  \texttt{} \\
+  \And
+  Name \\
+  University of Toronto \\
+  Toronto, Ontario, Canada \\
+  \texttt{} \\
+  \And
+  Daniel Goldberg\\
+  University of Toronto\\
+  Toronto, Ontario, Canada \\
+  \texttt{dang.goldberg@mail.utoronto.ca} \\
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+\begin{abstract}
+  In this paper...
+\end{abstract}
+
+\section{Introduction}
+Transfer Learning (TL) within the Reinforcement Learning (RL) domain can be described as leveraging mastery of one task (a source task) to improve learning speed or asymptotic performance in another task (a target task). The solution to achieving effective transfer depends on the differences between the two task goals, the environments the tasks are posed in, and the agents trying to solve them. The particular problem of deep transfer is the realm of transfer problems where the two tasks may differ in all three of these dimensions.
+
+	Reinforcement learning in a realistic setting usually does not allow for either  \emph{a priori} knowledge of the environment dynamics or \emph{a priori} knowledge of the relationship between observations, actions, and observed rewards; usually agents must rely solely on experience when learning how to master an RL problem. The method of transfer in RL utilizing actual recorded source task experience is known as instance transfer, and is especially difficult in the deep transfer space. Deep instance transfer can be achieved using a linear or non-linear mapping from the source experience space to the target experience space, and for fully autonomous intelligent transfer to occur this mapping must be learned by the target task agent independent of any explicit human mapping. With an inter-task mapping an agent can translate source task experience into pseudo target task experience and use these pseudo experiences as initial samples in a sample-based RL algorithm such as fitted Q-learning.
+
+
+\section{Reinforcement Learning}
+
+\section{Transfer Learning for Reinforcement Learning}
+
+[introduce TL broadly]
+
+\paragraph{Instance Transfer}
+
+\paragraph{Shallow Instance Transfer}
+
+\paragraph{Deep Instance Transfer}
+
+\section{Restricted Boltzmann Machines}
+
+\subsection{Bipartite RBMs}
+
+\subsection{High-Order RBMs}
+
+\section{Related Work}
+
+\subsection{Early Work}
+
+*See Taylor review
+- Early Taylor
+
+\subsection{Contrasting Methods}
+
+Gupta
+Progressive Nets
+*See newer review
+
+\subsection{Taylor's MASTER Algorithm}
+
+	[explain method and why it works]
+	[explain limitations, motivating Ammar's work]
+
+\subsection{Ammar's TrRBM Method}
+
+The main contribution of this paper is to build off the dissertation work of Ammar (CITE) in which he uses a high-order Restricted Boltzmann Machine to learn intertask mappings for instance transfer. Ammar?s method uses a 3-way RBM with one layer for each task?s concatenated instance tuple vectors (s,a,s?) and one hidden layer to modulate interaction between the two visible layers. The visible layer nodes $\mathbf{v}_{1}, \mathbf{v}_{2}$ are modelled as Gaussian random variables, $v_{1}^{(i)} \sim \mathcal{N}(\mu^{(i)}, \sigma),  v_{2}^{(j)} \sim \mathcal{N}(\mu^{(j)}, \sigma)$ and the hidden layer nodes $\mathbf{h}$ take the value of sigmoidal activations. Ammar gives two formulations for the 3-way RBM; the full Transfer Restricted Boltzmann Machine (TrRBM) version with a 3-way weight tensor having elements $\mathcal{W}_{ijk}$, and a factored ?fTrRBM? (Factored Transfer Restricted Boltzmann Machine) version in which the 3-way weight tensor is factored into the product of 3 layer-specific matrixes, . The factored version is motivated be a need to reduce computational complexity from the full version?s $O(n^{3})$ to a more manageable complexity of $O(n^{2})$. 
+	[FIGURE for fTrRBM]
+	[Talk about why the TrRBM can learn a good mapping]
+	[Talk about learning in the TrRBM model i.e. mean of gaussians]
+	[Motivate the extensions i.e. black-box model is unrealistic, sampling method is unrealistic]
+
+
+\section{New Extensions}
+
+This section is for showing our formalisms for the extensions we are making
+
+\subsection{TrRBM for a Model-Free Setting}
+
+\subsubsection{Using Source Q-Values Instead of Black-Box Target Task Rewards}
+
+\subsubsection{Transferring Best- and Worst- Policy Instances}
+
+\subsubsection{More Realistic Initial Sampling}
+
+\section{Experimental Setup}
+
+\subsection{Environments}
+
+\paragraph{2D Mountain Cart}
+
+\paragraph{3D Mountain Cart}
+
+\paragraph{2D Cartpole}
+
+\paragraph{3D Cartpole}
+
+\paragraph{Acrobot}
+
+\paragraph{2D Maze}
+
+\paragraph{3D Maze}
+
+\paragraph{Breakout}
+
+\paragraph{Pong}
+
+\subsection{Untested Design Choices}
+
+Briefly explain all parameter/model choices, why we did not tune/experiment with these, and what effect these might have!
+
+\section{Results}
+
+Display individual experiments tables comparing modifications against baselines and each other?
+
+Display individual plots showing the same?
+
+\section{Limitations}
+
+\section{Conclusions}
+
+\section*{References}
+
+
+
+\end{document}
