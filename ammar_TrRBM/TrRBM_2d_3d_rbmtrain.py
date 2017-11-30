@@ -4,25 +4,13 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from matplotlib import pyplot as plt
-import gym
-from tqdm import tqdm
-import collections
-
-import sys
-
-sys.path.append('../taylor_master/lib/env/')
-from threedmountain_car import ThreeDMountainCarEnv
-
-sys.path.append('../baselines/baselines/')
-import deepq
 
 import deepq_mod
+import baselines.deepq as deepq
 import trrbm
-import utils
-from envs import ENVS_DICTIONARY
-
 import pickle
-import datetime
+
+from envs import ENVS_DICTIONARY
 
 N_MAPPED = 5000
 target_env = ENVS_DICTIONARY['3DMountainCar']()
@@ -44,14 +32,14 @@ params_dictionary["epsilon"] = 0.5
 params_dictionary["epsilon_decay"] = 0.999
 params_dictionary["ini_steps_retrain"] = 50
 
-params_dictionary["TrRBM_hidden_units"] = 100
+params_dictionary["TrRBM_hidden_units"] = 150
 params_dictionary["TrRBM_batch_size"] = 100
 params_dictionary["TrRBM_learning_rate"] = 0.000001
-params_dictionary["TrRBM_num_epochs"] = 10
-params_dictionary["TrRBM_n_factors"] = 40
+params_dictionary["TrRBM_num_epochs"] = 20
+params_dictionary["TrRBM_n_factors"] = 100
 params_dictionary["TrRBM_k"] = 1
 params_dictionary["TrRBM_use_tqdm"] = True
-params_dictionary["TrRBM_show_err_plt"] = True
+params_dictionary["TrRBM_show_err_plt"] = False
 
 render = False
 
@@ -84,7 +72,7 @@ def unpack_samples(samples, action_encoder, fit_encoder=True):
             unpacked.append(np.concatenate([state, state_prime, action]))
 
     if action_encoder is not None:
-        if fit_encoder == True:
+        if fit_encoder:
             action_encoder.fit(np.array(actions).reshape(-1, 1))
         actions = action_encoder.transform(np.array(actions).reshape(-1, 1)).astype(float)
         unpacked = np.concatenate([unpacked, actions], axis=1)
@@ -101,7 +89,7 @@ def unpack_episodes(episodes, action_encoder, fit_encoder=False):
     for episode in episodes:
         for sample in episode:
             samples.append(sample)
-    _, unpacked = unpack_samples(samples, action_encoder, fit_encoder=False)
+    _, unpacked = unpack_samples(samples, action_encoder, fit_encoder=fit_encoder)
     return unpacked
 
 
@@ -170,56 +158,47 @@ def plot_with_gp(X, y, title='', xlabel='', ylabel='', plt_lable='', color='b'):
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    #plt.show()
+    # plt.show()
 
 
-def train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True, num_experiments=1):
+def train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True, max_episodes=100):
+    # run multiple experiments with the same transfer instances
     model = deepq.models.mlp([64], layer_norm=True)
+
     dq = deepq_mod.DeepQ(
         target_env,
         q_func=model,
         lr=1e-3,
-        max_timesteps=80000,
-        buffer_size=50000,
+        max_timesteps=50000,
+        buffer_size=25000,
         exploration_fraction=0.1,
         exploration_final_eps=0.1,
         print_freq=10,
-        param_noise=True)
+        param_noise=False, max_episodes=max_episodes)
+
+    # use transferred tuples to learn initial target policy \pi_{T}^{o}
+
     dq.make_build_train()
 
-    # run multiple experiments with the same transfer instances
-    experiments = []
-    for _ in range(num_experiments):
-        # use transferred tuples to learn initial target policy \pi_{T}^{o}
-        dq.initialize()
-        if with_transfer:
-            dq.transfer_pretrain(
-                zip(list(target_states), list(target_actions.squeeze()), list(rewards.squeeze()),
-                    list(target_states_prime))
-                , epochs=100
-                , tr_batch_size=32
-                , keep_in_replay_buffer=True
-            )
+    dq.initialize()
+    if with_transfer:
+        dq.transfer_pretrain(
+            zip(list(target_states), list(target_actions.squeeze()), list(rewards.squeeze()),
+                list(target_states_prime))
+            , epochs=100
+            , tr_batch_size=32
+            , keep_in_replay_buffer=False
+        )
 
-        # use initial target policy and learn as we go
-        act, episode_rewards, episode_steps = dq.task_train()
-        experiments.append((episode_rewards, episode_steps))
-
-    # plot results
-    X, rewards, steps = [], [], []
-    for episode_rewards, episode_steps in experiments:
-        X += [i for i in range(len(episode_steps))]
-        rewards += episode_rewards
-        steps += episode_steps
-
-    X = np.array(X).reshape(-1, 1)
-    return X, rewards, steps
+    # use initial target policy and learn as we go
+    act, episode_rewards, episode_steps = dq.task_train()
+    return episode_rewards, episode_steps
 
 
 def main():
-    source_random_path = '../taylor_master/data/2d_instances.pkl'
-    target_random_path = '../taylor_master/data/3d_instances.pkl'
-    source_optimal_path = '../taylor_master/data/optimal_instances.pkl'
+    source_random_path = '../taylor_baseline/data/2d_instances.pkl'
+    target_random_path = '../taylor_baseline/data/3d_instances.pkl'
+    source_optimal_path = '../taylor_baseline/data/optimal_instances.pkl'
 
     # load source task random samples
     source_action_encoder, source_random = unpack_samples(load_samples(source_random_path), OneHotEncoder(sparse=False))
@@ -229,8 +208,8 @@ def main():
 
     # prepare samples
     source_random, target_random = even_out_samplesizes(source_random, target_random)
-    source_scaler, source_random = utils.standardize_samples(source_random)
-    target_scaler, target_random = utils.standardize_samples(target_random)
+    # source_scaler, source_random = utils.standardize_samples(source_random)
+    # target_scaler, target_random = utils.standardize_samples(target_random)
 
     # load the TrRBM model
 
@@ -240,7 +219,7 @@ def main():
         h_size=params_dictionary["TrRBM_hidden_units"],
         v2_size=target_random.shape[1],
         n_data=source_random.shape[0],
-        batch_size=params_dictionary["TrRBM_hidden_units"],
+        batch_size=params_dictionary["TrRBM_batch_size"],
         learning_rate=params_dictionary["TrRBM_learning_rate"],
         num_epochs=params_dictionary["TrRBM_num_epochs"],
         n_factors=params_dictionary["TrRBM_n_factors"],
@@ -261,13 +240,13 @@ def main():
 
     # load source task optimal instances
     source_optimal = unpack_episodes(load_samples(source_optimal_path), source_action_encoder, fit_encoder=False)
-    source_optimal = source_scaler.transform(source_optimal)
+    # source_optimal = source_scaler.transform(source_optimal)
 
     # map to target instances
     print('DEBUG: mapping instances over using TrRBM')
     np.random.shuffle(source_optimal)
     target_mapped = rbm.v2_predict(source_optimal[:N_MAPPED])
-    target_mapped = target_scaler.inverse_transform(target_mapped)
+    # target_mapped = target_scaler.inverse_transform(target_mapped)
 
     # prepare target instances (i.e. decode action; split s from s')
     print('DEBUG: preparing target instances')
@@ -279,18 +258,19 @@ def main():
     print('DEBUG: generating black-box rewards')
     rewards = generate_rewards(target_env, target_states, target_actions)
 
+    with open('exp_data/3DmountainCarTarget.pkl', 'wb') as f:
+        pickle.dump([target_states, target_actions, rewards, target_states_prime], f)
+
+    print('saved TrRBM outputs')
     # TODO: one alternative to getting rewards from black-box model may be using (normalized?) Q values from source task
 
     # build target policy Q value function approximator
+    #
+    # m_rewards, steps = train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True)
+    #
+    # with open('exp_data/mountainCarTransfer.pkl', 'wb') as f:
+    #     pickle.dump([m_rewards, steps], f)
 
-    X, m_rewards, steps = train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True,
-                                    num_experiments=5)
-
-    with open('exp_data/mountainCarTransfer.pkl', 'wb') as f:
-        pickle.dump([X, m_rewards, steps], f)
-
-    with open('exp_data/3DmountainCarTarget.pkl', 'wb') as f:
-        pickle.dump([target_states, target_actions, rewards, target_states_prime], f)
 
     # output results for persistance
     # TODO
