@@ -1,7 +1,13 @@
 import pickle
 from matplotlib import pyplot as plt
-from TrRBM_2d_3d_rbmtrain import plot_with_gp
 import numpy as np
+
+
+def plot_rewards_steps(with_transfer=True):
+
+    name_str = 'with_transfer' if with_transfer else 'no_transfer'
+
+
 
 if __name__ == '__main__':
 

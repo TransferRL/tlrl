@@ -1,11 +1,11 @@
 import pickle
-from TrRBM_2d_3d_rbmtrain import train_dqn
+from TrRBM_train_models import train_dqn
 import tensorflow as tf
 
 
-def main(num_episodes=100, num_experiments=5, with_transfer=True):
+def train_dqn_transfer(source_env_str, target_env_str, num_episodes=100, num_experiments=5, with_transfer=True):
 
-    with open('exp_data/3DmountainCarTarget.pkl', 'rb') as f:
+    with open('exp_data/{}_{}_Transferred_Optimal.pkl'.format(source_env_str, target_env_str), 'rb') as f:
         target_states, target_actions, rewards, target_states_prime = pickle.load(f)
 
     rewards_list, steps_list = [], []
@@ -23,4 +23,4 @@ def main(num_episodes=100, num_experiments=5, with_transfer=True):
 
 
 if __name__ == '__main__':
-    main(num_episodes=10, num_experiments=3, with_transfer=False)
+    train_dqn_transfer(num_episodes=10, num_experiments=3, with_transfer=True)

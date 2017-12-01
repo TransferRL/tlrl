@@ -10,10 +10,9 @@ import baselines.deepq as deepq
 import trrbm
 import pickle
 
-from envs import ENVS_DICTIONARY
+from envs import ENVS_PATH_DICTIONARY
 
 N_MAPPED = 5000
-target_env = ENVS_DICTIONARY['3DMountainCar']()
 _3d = True
 
 params_dictionary = {}
@@ -35,8 +34,8 @@ params_dictionary["ini_steps_retrain"] = 50
 params_dictionary["TrRBM_hidden_units"] = 150
 params_dictionary["TrRBM_batch_size"] = 100
 params_dictionary["TrRBM_learning_rate"] = 0.000001
-params_dictionary["TrRBM_num_epochs"] = 20
-params_dictionary["TrRBM_n_factors"] = 100
+params_dictionary["TrRBM_num_epochs"] = 150
+params_dictionary["TrRBM_n_factors"] = 60
 params_dictionary["TrRBM_k"] = 1
 params_dictionary["TrRBM_use_tqdm"] = True
 params_dictionary["TrRBM_show_err_plt"] = False
@@ -161,12 +160,12 @@ def plot_with_gp(X, y, title='', xlabel='', ylabel='', plt_lable='', color='b'):
     # plt.show()
 
 
-def train_dqn(target_states, target_actions, rewards, target_states_prime, with_transfer=True, max_episodes=100):
+def train_dqn(env, target_states, target_actions, rewards, target_states_prime, with_transfer=True, max_episodes=100):
     # run multiple experiments with the same transfer instances
     model = deepq.models.mlp([64], layer_norm=True)
 
     dq = deepq_mod.DeepQ(
-        target_env,
+        env,
         q_func=model,
         lr=1e-3,
         max_timesteps=50000,
@@ -195,11 +194,13 @@ def train_dqn(target_states, target_actions, rewards, target_states_prime, with_
     return episode_rewards, episode_steps
 
 
-def main():
-    source_random_path = '../taylor_baseline/data/2d_instances.pkl'
-    target_random_path = '../taylor_baseline/data/3d_instances.pkl'
-    source_optimal_path = '../taylor_baseline/data/optimal_instances.pkl'
+def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
+    source_random_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + option_str + '_instances.pkl'
+    target_random_path = ENVS_PATH_DICTIONARY[target_env_str]['instances_path'] + option_str + '_instances.pkl'
+    source_optimal_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'optimal_instances.pkl'
+
+    target_env = ENVS_PATH_DICTIONARY[target_env_str]['env']()
     # load source task random samples
     source_action_encoder, source_random = unpack_samples(load_samples(source_random_path), OneHotEncoder(sparse=False))
 
@@ -231,12 +232,12 @@ def main():
     # train the TrRBM model
     errs = rbm.train(source_random, target_random)
 
-    if rbm.show_err_plt:
-        plt.plot(range(len(rbm.cost)), rbm.cost)
-        plt.title('TrRBM training reconstruction error')
-        plt.xlabel('epoch')
-        plt.ylabel('avg reconstruction error')
-        plt.show()
+    # if rbm.show_err_plt:
+    #     plt.plot(range(len(rbm.cost)), rbm.cost)
+    #     plt.title('TrRBM training reconstruction error')
+    #     plt.xlabel('epoch')
+    #     plt.ylabel('avg reconstruction error')
+    #     plt.show()
 
     # load source task optimal instances
     source_optimal = unpack_episodes(load_samples(source_optimal_path), source_action_encoder, fit_encoder=False)
@@ -258,10 +259,10 @@ def main():
     print('DEBUG: generating black-box rewards')
     rewards = generate_rewards(target_env, target_states, target_actions)
 
-    with open('exp_data/3DmountainCarTarget.pkl', 'wb') as f:
+    with open('exp_data/{}_{}_Transferred_Optimal.pkl'.format(source_env_str, target_env_str), 'wb') as f:
         pickle.dump([target_states, target_actions, rewards, target_states_prime], f)
 
-    print('saved TrRBM outputs')
+    print('saved TrRBM outputs: mapping from {} to {}'.format(source_env_str, target_env_str))
     # TODO: one alternative to getting rewards from black-box model may be using (normalized?) Q values from source task
 
     # build target policy Q value function approximator
@@ -277,5 +278,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    # train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='realistic')
+    train_transfer_mapping('2DMountainCar', '2DCartPole', option_str='realistic')
+    # train_transfer_mapping('2DCartPole', '3DCartPole', option_str='realistic')
+
     print('done')
