@@ -260,10 +260,11 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
     print('DEBUG: generating black-box rewards')
     rewards = generate_rewards(target_env, target_states, target_actions)
 
-    with open('exp_data/{}_{}_Transferred_Optimal.pkl'.format(source_env_str, target_env_str), 'wb') as f:
+    with open('exp_data/{}_{}_{}_Transferred_Optimal.pkl'.format(source_env_str, target_env_str, option_str), 'wb') as f:
         pickle.dump([target_states, target_actions, rewards, target_states_prime], f)
 
-    print('saved TrRBM outputs: mapping from {} to {}'.format(source_env_str, target_env_str))
+    print('saved TrRBM outputs: mapping from {} to {} with {} instances'.format(source_env_str, target_env_str,
+                                                                                option_str))
     # TODO: one alternative to getting rewards from black-box model may be using (normalized?) Q values from source task
 
     # build target policy Q value function approximator
@@ -280,8 +281,9 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
 if __name__ == '__main__':
 
-    # train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='random')
-    train_transfer_mapping('2DMountainCar', '2DCartPole', option_str='random')
+    train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='random')
+    train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='realistic')
+    # train_transfer_mapping('2DMountainCar', '2DCartPole', option_str='random')
     # train_transfer_mapping('2DCartPole', '3DCartPole', option_str='realistic')
 
     print('done')
