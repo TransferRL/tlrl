@@ -12,6 +12,7 @@ import gym
 import baselines.common.tf_util as U
 from baselines import logger
 from baselines.common.schedules import LinearSchedule
+from baselines.common.schedules import ConstantSchedule
 from baselines import deepq
 from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
@@ -232,10 +233,11 @@ class DeepQ(object):
             self.replay_buffer = ReplayBuffer(self.buffer_size)
             self.beta_schedule = None
         # Create the schedule for exploration starting from 1.
-        self.exploration = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.max_timesteps),
-                                          initial_p=1.0,
-                                          final_p=self.exploration_final_eps)
+        # self.exploration = LinearSchedule(schedule_timesteps=int(self.exploration_fraction * self.max_timesteps),
+        #                                   initial_p=1.0,
+        #                                   final_p=self.exploration_final_eps)
 
+        self.exploration = ConstantSchedule(self.exploration_final_eps)
         # Initialize the parameters and copy them to the target network.
         U.initialize()
         self.update_target()

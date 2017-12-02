@@ -9,6 +9,7 @@ import deepq_mod
 import baselines.deepq as deepq
 import trrbm
 import pickle
+import utils
 
 from envs import ENVS_PATH_DICTIONARY
 
@@ -168,7 +169,7 @@ def train_dqn(env, target_states, target_actions, rewards, target_states_prime, 
         env,
         q_func=model,
         lr=1e-3,
-        max_timesteps=50000,
+        max_timesteps=5000000000,
         buffer_size=25000,
         exploration_fraction=0.1,
         exploration_final_eps=0.1,
@@ -209,8 +210,8 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
     # prepare samples
     source_random, target_random = even_out_samplesizes(source_random, target_random)
-    # source_scaler, source_random = utils.standardize_samples(source_random)
-    # target_scaler, target_random = utils.standardize_samples(target_random)
+    source_scaler, source_random = utils.standardize_samples(source_random)
+    target_scaler, target_random = utils.standardize_samples(target_random)
 
     # load the TrRBM model
 
@@ -241,13 +242,13 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
     # load source task optimal instances
     source_optimal = unpack_episodes(load_samples(source_optimal_path), source_action_encoder, fit_encoder=False)
-    # source_optimal = source_scaler.transform(source_optimal)
+    source_optimal = source_scaler.transform(source_optimal)
 
     # map to target instances
     print('DEBUG: mapping instances over using TrRBM')
     np.random.shuffle(source_optimal)
     target_mapped = rbm.v2_predict(source_optimal[:N_MAPPED])
-    # target_mapped = target_scaler.inverse_transform(target_mapped)
+    target_mapped = target_scaler.inverse_transform(target_mapped)
 
     # prepare target instances (i.e. decode action; split s from s')
     print('DEBUG: preparing target instances')
@@ -279,8 +280,8 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
 if __name__ == '__main__':
 
-    # train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='realistic')
-    train_transfer_mapping('2DMountainCar', '2DCartPole', option_str='realistic')
+    # train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='random')
+    train_transfer_mapping('2DMountainCar', '2DCartPole', option_str='random')
     # train_transfer_mapping('2DCartPole', '3DCartPole', option_str='realistic')
 
     print('done')
