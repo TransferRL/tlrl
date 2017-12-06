@@ -5,6 +5,7 @@ import deepq
 import os.path
 import traceback
 import gym
+import math
 
 # 2D MC -> 3D MC
 # 2D MC -> 2D Cartpole
@@ -36,9 +37,10 @@ R_MAP = {
 }
 
 SOURCE_MAP = {
+    "2d_cart_pole":CartPoleEnv(),
     "2d_mountain_car": MountainCarEnv(),
     "acrobot": AcrobotEnv(),
-    "2d_maze": MazeEnv(maze_size=(5,5)),
+    # "2d_maze": MazeEnv(maze_size=(5,5)),
     "breakout": gym.make("Breakout-ram-v0"),
     "Pong": gym.make("Pong-ram-v0")
 }
@@ -56,7 +58,9 @@ def generate_optimal_samples(env, modelpath):
     q_values_graph = deepq.build_graph.build_q_values(**act._act_params)
 
     replay_memory = []  # reset
+    count = 0
     for ep in range(100):  # 100 episodes
+        if count > NUM_RAND_INSTANCES: break
         obs, done = env.reset(), False
         result = []
         while not done:
@@ -65,6 +69,7 @@ def generate_optimal_samples(env, modelpath):
             n_obs, rew, done, _ = env.step(action)
             # print([obs, action, n_obs, rew, done, q_values[0][action]])
             result.append([obs, action, n_obs, rew, done, q_values[0][action]])
+            count += 1
             obs = n_obs
         replay_memory.append(result)
     return replay_memory
@@ -91,6 +96,23 @@ def train_source_tasks():
           param_noise=False
           )
         act.save(file_path)
+def train_task(name, env):
+    model = deepq.models.mlp([64], layer_norm=True)
+
+    file_path = "../models/" + name + "_dqn.pkl"
+    if os.path.exists(file_path): return
+    act = deepq.learn(
+        env,
+        q_func=model,
+        lr=1e-3,
+        max_timesteps=40000,
+        buffer_size=50000,
+        exploration_fraction=0.1,
+        exploration_final_eps=0.1,
+        print_freq=1,
+        param_noise=False
+    )
+    act.save(file_path)
 
 def process_random_ins():
 
@@ -178,7 +200,7 @@ def main():
     # train_source_tasks()
 
     process_random_ins()
-    # process_optimal_ins()
+    process_optimal_ins()
     process_real_ins()
 
 
@@ -223,7 +245,45 @@ def test_generated():
             print(e)
         print("------------------------------------")
 
+def get_maximum():
+    with open("../data/2d_cart_pole/optimal_instances.pkl", "rb") as f:
+        episodes = cPickcle.load(f)
+    min_v = 0
+    max_v = 0
+    min_p_v = 0
+    max_p_v = 0
+    for episode in episodes:
+        for play in episode:
+            max_v = max(play[0][1], max_v)
+            min_v = min(play[0][1], min_v)
+            max_p_v = max(play[0][3], max_p_v)
+            min_p_v = min(play[0][3], min_p_v)
+    print(2*min_v, 2*max_v, 2*min_p_v, 2*max_p_v)
+
+def generate_random_instance_for_cart_pole():
+    env = SOURCE_MAP['2d_cart_pole']
+    result = []
+    for _ in range(NUM_RAND_INSTANCES):
+        env.reset()
+        state = env.observation_space.sample()
+        min_v = -3.38782446759
+        max_v = 4.54865508853
+        min_p_v = -3.41191446185
+        max_p_v = -3.24097659602
+        # print(state)
+        state = np.clip(state, [-2.4, min_v, -12 * 2 * math.pi / 360 ,min_p_v], [2.4, max_v, 12 * 2 * math.pi / 360, max_p_v])
+        print(state)
+        env.set_state(state)
+        action = env.action_space.sample()
+        next_state, reward, done, info = env.step(action)
+        print("next", next_state)
+        result.append([state, action, next_state, reward, done])
+
+    with open("../data/2d_cart_pole/random_instances.pkl", "wb+") as f:
+        cPickcle.dump(result, f)
 if __name__ == "__main__":
+
     main()
-    test_generated()
+    # get_maximum()
+    # test_generated()
 
