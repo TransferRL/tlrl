@@ -147,18 +147,24 @@ class RBM(object):
         self.tf_session.run(init)
 
         pbar = tqdm(range(self.num_epochs))
+        counter = 0
+
         for i in pbar:
             avg_err = self.one_train_step(v1_input, v2_input)
             self.cost.append(avg_err)
             pbar.set_description('squared reconstruction average batch error: {}'.format(avg_err))
 
             # catch divergence
-            if np.isnan(self.cost[-1]) == True:
+            if np.isnan(self.cost[-1]):
                 raise RuntimeError('Training has diverged - lower learning rate!')
             # early stopping
-            if i > 20 and np.mean(self.cost[-40:-20]) - np.mean(self.cost[-20:]) < np.mean(self.cost[-40:]) * 0.005:
+            if i > 1 and np.mean(self.cost[-10:-5]) - np.mean(self.cost[-5:]) < np.mean(self.cost[-10:]) * 0.005:
+                counter += 1
+                if counter >= 5:
+                    self.learning_rate = self.learning_rate / 2
+                    counter = 0
+            if self.learning_rate < 1e-10:
                 break
-
         return self.cost
 
     def one_train_step(self, v1_input, v2_input):
