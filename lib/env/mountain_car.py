@@ -18,6 +18,8 @@ class MountainCarEnv(gym.Env):
     def __init__(self, trailer=False):
         self.name = '2d_mountain_car'
         self.trailer = trailer # to show trails of the agent
+        self.last_few_positions = []
+        self.trail_num = 40
 
         self.min_position = -1.2
         self.max_position = 0.6
@@ -53,6 +55,10 @@ class MountainCarEnv(gym.Env):
 
         done = bool(position >= self.goal_position)
         reward = -1.0
+
+        self.last_few_positions.append(position)
+        if len(self.last_few_positions) == self.trail_num+1:
+            del self.last_few_positions[0]
 
         self.state = (position, velocity)
         return np.array(self.state), reward, done, {}
@@ -118,17 +124,24 @@ class MountainCarEnv(gym.Env):
             flag.set_color(.8,.8,0)
             self.viewer.add_geom(flag)
 
+            # set trails
+            if self.trailer:
+                self.trail_trans = []
+                for i in range(self.trail_num):
+                    trail = rendering.make_circle(radius=2)
+                    trail.set_color(0,0,1)
+                    trans = rendering.Transform()
+                    trail.add_attr(trans)
+                    self.viewer.add_geom(trail)
+                    self.trail_trans.append(trans)
+
 
         pos = self.state[0]
         self.cartrans.set_translation((pos-self.min_position)*scale, self._height(pos)*scale)
         self.cartrans.set_rotation(math.cos(3 * pos))
 
-        # if self.trailer:
-        #     pos = self.state[0]
-        #     trail_trans = rendering.Transform()
-        #     trail = rendering.make_circle(radius=5)
-        #     trail.add_attr(trail_trans)
-        #     trail_trans.set_translation((pos - self.min_position) * scale, self._height(pos) * scale)
+        for i in range(len(self.last_few_positions)):
+            self.trail_trans[i].set_translation((self.last_few_positions[i]-self.min_position)*scale, self._height(self.last_few_positions[i])*scale)
 
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
