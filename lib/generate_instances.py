@@ -22,7 +22,8 @@ RAND_MAP = {
     "2d_mountain_car": MountainCarEnv(),
     "3d_mountain_car": ThreeDMountainCarEnv(),
     "2d_cart_pole":CartPoleEnv(),
-    "3d_cart_pole": ThreeDCartPoleEnv()
+    "3d_cart_pole": ThreeDCartPoleEnv(),
+    "acrobot":AcrobotEnv()
 }
 
 R_MAP = {
@@ -45,7 +46,6 @@ SOURCE_MAP = {
     "Pong": gym.make("Pong-ram-v0")
 }
 def get_rand_instance(env):
-    env.reset()
     state = env.observation_space.sample()
     env.set_state(state)
     action = env.action_space.sample()
@@ -144,7 +144,6 @@ def process_random_ins():
     print("==============================")
 
 def process_optimal_ins():
-
     print("==============================")
     print("Generating optimal instances...")
     # Generate optimals
@@ -200,8 +199,8 @@ def main():
     # train_source_tasks()
 
     process_random_ins()
-    process_optimal_ins()
-    process_real_ins()
+    # process_optimal_ins()
+    # process_real_ins()
 
 
 
