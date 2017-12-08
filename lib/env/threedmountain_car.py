@@ -372,9 +372,10 @@ class ThreeDMountainCarEnv(gym.Env):
             # set trails
             if self.trailer:
                 self.trail_trans = []
+                trail_color_increment = 1.0/self.trail_num
                 for i in range(self.trail_num):
-                    trail = rendering.make_circle(radius=2)
-                    trail.set_color(0,0,1)
+                    trail = rendering.make_circle(radius=5)
+                    trail.set_color(1-trail_color_increment*i,0,0)
                     trans = rendering.Transform()
                     trail.add_attr(trans)
                     self.viewer_orthographic.add_geom(trail)
