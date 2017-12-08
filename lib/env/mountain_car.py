@@ -15,8 +15,9 @@ class MountainCarEnv(gym.Env):
         'video.frames_per_second': 30
     }
 
-    def __init__(self):
+    def __init__(self, trailer=False):
         self.name = '2d_mountain_car'
+        self.trailer = trailer # to show trails of the agent
 
         self.min_position = -1.2
         self.max_position = 0.6
@@ -117,8 +118,36 @@ class MountainCarEnv(gym.Env):
             flag.set_color(.8,.8,0)
             self.viewer.add_geom(flag)
 
+
         pos = self.state[0]
         self.cartrans.set_translation((pos-self.min_position)*scale, self._height(pos)*scale)
         self.cartrans.set_rotation(math.cos(3 * pos))
 
+        # if self.trailer:
+        #     pos = self.state[0]
+        #     trail_trans = rendering.Transform()
+        #     trail = rendering.make_circle(radius=5)
+        #     trail.add_attr(trail_trans)
+        #     trail_trans.set_translation((pos - self.min_position) * scale, self._height(pos) * scale)
+
+
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
+
+if  __name__ == '__main__':
+    # test the environment with random actions
+
+    env = MountainCarEnv(trailer=True)
+    state = env.reset()
+    is_reset = False
+    for t in range(100000):
+
+        if is_reset:
+            state = env.reset()
+
+        action = env.action_space.sample()
+        next_state, reward, done, info = env.step(action)
+        env.render()
+
+        if done:
+            is_reset = True
+

@@ -24,8 +24,12 @@ class ThreeDMountainCarEnv(gym.Env):
         'video.frames_per_second': 30
     }
 
-    def __init__(self):
+    def __init__(self, trailer=False):
         self.name = '3d_mountain_car'
+
+        self.trailer = trailer
+        self.last_few_positions = []
+        self.trail_num = 40
 
         self.min_position_x = -1.2
         self.max_position_x = math.pi/6 - 0.01
@@ -102,6 +106,10 @@ class ThreeDMountainCarEnv(gym.Env):
         # done = bool(position_x >= self.goal_position)
 
         reward = -1.0
+
+        self.last_few_positions.append((position_x, position_y))
+        if len(self.last_few_positions) == self.trail_num+1:
+            del self.last_few_positions[0]
 
         self.state = (position_x, position_y, velocity_x, velocity_y)
         return np.array(self.state), reward, done, {}
@@ -361,11 +369,24 @@ class ThreeDMountainCarEnv(gym.Env):
             flag.set_color(1,0,0)
             self.viewer_orthographic.add_geom(flag)
 
+            # set trails
+            if self.trailer:
+                self.trail_trans = []
+                for i in range(self.trail_num):
+                    trail = rendering.make_circle(radius=2)
+                    trail.set_color(0,0,1)
+                    trans = rendering.Transform()
+                    trail.add_attr(trans)
+                    self.viewer_orthographic.add_geom(trail)
+                    self.trail_trans.append(trans)
+
+
         pos_x = self.state[0]
         pos_y = self.state[1]
         self.cartrans_orth.set_translation((pos_x-self.min_position_x)*scale, (pos_y-self.min_position_y)*scale)
-        # self.cartrans_orth.set_rotation(math.cos(3 * pos))
 
+        for i in range(len(self.last_few_positions)):
+            self.trail_trans[i].set_translation((self.last_few_positions[i][0] - self.min_position_x) * scale, (self.last_few_positions[i][1] - self.min_position_y) * scale)
 
         return self.viewer_orthographic.render(return_rgb_array = mode=='rgb_array')
 
@@ -375,3 +396,22 @@ class ThreeDMountainCarEnv(gym.Env):
             self.viewer.close()
             self.viewer = None
         return
+
+
+if __name__ == "__main__":
+    # test the environment with random actions
+
+    env = ThreeDMountainCarEnv(trailer=True)
+    state = env.reset()
+    is_reset = False
+    for t in range(100000):
+
+        if is_reset:
+            state = env.reset()
+
+        action = env.action_space.sample()
+        next_state, reward, done, info = env.step(action)
+        env.render_orthographic()
+
+        if done:
+            is_reset = True
