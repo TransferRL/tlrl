@@ -8,6 +8,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
+from gym.envs.classic_control import rendering
+
 
 class MountainCarEnv(gym.Env):
     metadata = {
@@ -15,9 +17,16 @@ class MountainCarEnv(gym.Env):
         'video.frames_per_second': 30
     }
 
+<<<<<<< HEAD
     def __init__(self, trailer=False):
         self.name = '2d_mountain_car'
         self.trailer = trailer # to show trails of the agent
+=======
+    def __init__(self, trailer=False, show_velo=False):
+        self.name = '2d_mountain_car'
+        self.trailer = trailer # to show trails of the agent
+        self.show_velo=False #to show velo of the agent
+>>>>>>> dan-dev
         self.last_few_positions = []
         self.trail_num = 40
 
@@ -70,7 +79,7 @@ class MountainCarEnv(gym.Env):
     def _height(self, xs):
         return np.sin(3 * xs)*.45+.55
 
-    def _render(self, mode='human', close=False):
+    def _render(self, mode='human', close=False, action_idx=None, action_vec=None):
         if close:
             if self.viewer is not None:
                 self.viewer.close()
@@ -87,7 +96,6 @@ class MountainCarEnv(gym.Env):
 
 
         if self.viewer is None:
-            from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(screen_width, screen_height)
             xs = np.linspace(self.min_position, self.max_position, 100)
             ys = self._height(xs)
@@ -135,22 +143,61 @@ class MountainCarEnv(gym.Env):
                     trail.add_attr(trans)
                     self.viewer.add_geom(trail)
                     self.trail_trans.append(trans)
+<<<<<<< HEAD
 
 
+=======
+                    
+                    
+        if action_idx is not None or action_vec is not None:
+            actions = np.array([[-1,0],[0,0],[1,0]])
+            if action_idx is not None:
+                action_vertex = tuple(actions[action_idx] * scale * 0.1)
+            elif action_vec is not None:
+                action_vertex = tuple(np.sum(action_vec.reshape(-1,1)*actions,axis=0) * scale * 0.1)
+            action_direction = rendering.make_polyline([(0,0),action_vertex])
+            action_direction.add_attr(self.cartrans)
+            action_direction.set_linewidth(2)
+            action_direction.set_color(0, 1, 0)
+            self.viewer.add_onetime(action_direction)
+
+
+        if self.show_velo == True:
+            velocity_vertex = tuple(np.array(self.state[2:4]) * scale * 10)
+            velocity = rendering.make_polyline([(0,0),velocity_vertex])
+            velocity.add_attr(self.cartrans)
+            velocity.set_linewidth(2)
+            velocity.set_color(0, 0, 1)
+            self.viewer.add_onetime(velocity)
+
+
+        if self.trailer:
+            for i in range(len(self.last_few_positions)):
+                self.trail_trans[i].set_translation((self.last_few_positions[i]-self.min_position)*scale, self._height(self.last_few_positions[i])*scale)
+                
+
+>>>>>>> dan-dev
         pos = self.state[0]
         self.cartrans.set_translation((pos-self.min_position)*scale, self._height(pos)*scale)
         self.cartrans.set_rotation(math.cos(3 * pos))
 
+<<<<<<< HEAD
         for i in range(len(self.last_few_positions)):
             self.trail_trans[i].set_translation((self.last_few_positions[i]-self.min_position)*scale, self._height(self.last_few_positions[i])*scale)
 
+=======
+>>>>>>> dan-dev
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
 if  __name__ == '__main__':
     # test the environment with random actions
 
+<<<<<<< HEAD
     env = MountainCarEnv(trailer=True)
+=======
+    env = MountainCarEnv(trailer=True, show_velo=True)
+>>>>>>> dan-dev
     state = env.reset()
     is_reset = False
     for t in range(100000):
@@ -160,7 +207,11 @@ if  __name__ == '__main__':
 
         action = env.action_space.sample()
         next_state, reward, done, info = env.step(action)
+<<<<<<< HEAD
         env.render()
+=======
+        env.render(action_idx=action)
+>>>>>>> dan-dev
 
         if done:
             is_reset = True

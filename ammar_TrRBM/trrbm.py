@@ -251,10 +251,12 @@ class RBM(object):
         # mean field
         # v2_predictions = self.prop_v1h_v2(v1_inputs, self.h)
         # return self.prop_v1h_v2(v1_input, self.final_h)
+        
+        n_batches = int(v1_input.shape[0]/self.batch_size)
 
-        v1_input_list = np.split(v1_input, self.n_batches)
+        v1_input_list = np.split(v1_input, n_batches)
         v2_predictions = []
-        for i in range(self.n_batches):
+        for i in range(n_batches):
             v2_prediction = self.tf_session.run(self.prop_v1h_v2(self.v1_input, self.final_h), {self.v1_input:
                                                                                                 v1_input_list[i],
                                                                                                 self.v2_input:
