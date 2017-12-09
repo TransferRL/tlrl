@@ -186,7 +186,7 @@ if  __name__ == '__main__':
 
         action = env.action_space.sample()
         next_state, reward, done, info = env.step(action)
-        env.render(action_idx=action)
+        env._render(action_idx=action)
 
         if done:
             is_reset = True
