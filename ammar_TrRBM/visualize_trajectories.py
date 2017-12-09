@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[7]:
+# In[1]:
 
 import numpy as np
 import sys
@@ -9,12 +9,12 @@ sys.path.append('/Users/dangoldberg/Desktop/code/tlrl')
 sys.path.append('/Users/dangoldberg/Desktop/code/tlrl/lib')
 
 
-# In[8]:
+# In[2]:
 
 from TrRBM_train_models import *
 
 
-# In[9]:
+# In[3]:
 
 def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
@@ -57,12 +57,12 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
     return rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_scaler
 
 
-# In[ ]:
+# In[4]:
 
 rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_scaler = train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='random')
 
 
-# In[ ]:
+# In[5]:
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -74,14 +74,15 @@ plt.ylabel('reconstruction error')
 plt.show()
 
 
-# In[ ]:
+# In[6]:
 
 def get_source_instances(source_env_str, target_env_str, option_str='random'):
 
     source_random_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + option_str + '_instances.pkl'
     target_random_path = ENVS_PATH_DICTIONARY[target_env_str]['instances_path'] + option_str + '_instances.pkl'
     source_optimal_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'optimal_instances.pkl'
-
+    source_realistic_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'realistic_instances.pkl'
+    
     target_env = ENVS_PATH_DICTIONARY[target_env_str]['env']
     # load source task random samples
     source_action_encoder, source_random = unpack_samples(load_samples(source_random_path), OneHotEncoder(sparse=False))
@@ -97,30 +98,41 @@ def get_source_instances(source_env_str, target_env_str, option_str='random'):
     source_optimal = unpack_episodes(load_samples(source_optimal_path), source_action_encoder, fit_encoder=False)
     source_scaled = source_scaler.transform(source_optimal)
     
-    return source_optimal, source_scaled
+    source_realistic = unpack_episodes([load_samples(source_realistic_path)], source_action_encoder, fit_encoder=False)
+    
+    return source_optimal, source_realistic
 
-source_optimal, source_scaled = get_source_instances('2DMountainCar', '3DMountainCar', option_str='random')
-
-
-# In[ ]:
-
-optimal_trajectory = source_optimal
+source_optimal, source_realistic = get_source_instances('2DMountainCar', '3DMountainCar', option_str='random')
 
 
 # In[ ]:
 
-print(len(source_optimal))
 
-target_mapped = rbm.v2_predict(source_optimal[:15000])
+
+
+# In[7]:
+
+#source_instances = source_optimal
+source_instances = source_realistic
+
+source_trajectory = source_instances
+
+
+
+# In[8]:
+
+print(len(source_instances))
+
+target_mapped = rbm.v2_predict(source_instances[:15000])
 target_mapped = target_scaler.inverse_transform(target_mapped)
 
 
-# In[ ]:
+# In[9]:
 
 mapped_trajectory = target_mapped
 
 
-# In[ ]:
+# In[10]:
 
 len(mapped_trajectory)
 
@@ -130,14 +142,14 @@ len(mapped_trajectory)
 
 
 
-# In[ ]:
+# In[11]:
 
 import pickle
-optimal_trajectory.dump('visualize_trajectories/2DMC-3DMC/optimal_trajectory.p')
+source_trajectory.dump('visualize_trajectories/2DMC-3DMC/source_trajectory.p')
 mapped_trajectory.dump('visualize_trajectories/2DMC-3DMC/mapped_trajectory.p')
 
 
-# In[ ]:
+# In[12]:
 
 from envs import *
 
@@ -145,21 +157,21 @@ threeD = ENVS_DICTIONARY['3DMountainCar'](trailer=True, show_velo=True)
 twoD = ENVS_DICTIONARY['2DMountainCar'](trailer=True)
 
 
-# In[ ]:
+# In[13]:
 
-optimal_trajectory = np.load('visualize_trajectories/2DMC-3DMC/optimal_trajectory.p')
+source_trajectory = np.load('visualize_trajectories/2DMC-3DMC/source_trajectory.p')
 mapped_trajectory = np.load('visualize_trajectories/2DMC-3DMC/mapped_trajectory.p')
 
 
-# In[ ]:
+# In[14]:
 
 for t in range(5000):
     
-    twoD.state = optimal_trajectory[t]
-    twoD.last_few_positions.append((optimal_trajectory[t][0]))
+    twoD.state = source_trajectory[t]
+    twoD.last_few_positions.append((source_trajectory[t][0]))
     if len(twoD.last_few_positions) == twoD.trail_num+1:
         del twoD.last_few_positions[0]
-    twoD._render(action_vec=optimal_trajectory[t][4:])
+    twoD._render(action_vec=source_trajectory[t][4:])
 
     threeD.state = mapped_trajectory[t]
     threeD.last_few_positions.append((mapped_trajectory[t][0], mapped_trajectory[t][1]))
@@ -170,6 +182,7 @@ for t in range(5000):
     
     
 threeD.close()
+twoD.close()
 
 
 # In[ ]:
