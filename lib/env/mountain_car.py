@@ -17,16 +17,10 @@ class MountainCarEnv(gym.Env):
         'video.frames_per_second': 30
     }
 
-<<<<<<< HEAD
-    def __init__(self, trailer=False):
-        self.name = '2d_mountain_car'
-        self.trailer = trailer # to show trails of the agent
-=======
     def __init__(self, trailer=False, show_velo=False):
         self.name = '2d_mountain_car'
         self.trailer = trailer # to show trails of the agent
         self.show_velo=False #to show velo of the agent
->>>>>>> dan-dev
         self.last_few_positions = []
         self.trail_num = 40
 
@@ -143,10 +137,6 @@ class MountainCarEnv(gym.Env):
                     trail.add_attr(trans)
                     self.viewer.add_geom(trail)
                     self.trail_trans.append(trans)
-<<<<<<< HEAD
-
-
-=======
                     
                     
         if action_idx is not None or action_vec is not None:
@@ -176,28 +166,17 @@ class MountainCarEnv(gym.Env):
                 self.trail_trans[i].set_translation((self.last_few_positions[i]-self.min_position)*scale, self._height(self.last_few_positions[i])*scale)
                 
 
->>>>>>> dan-dev
         pos = self.state[0]
         self.cartrans.set_translation((pos-self.min_position)*scale, self._height(pos)*scale)
         self.cartrans.set_rotation(math.cos(3 * pos))
 
-<<<<<<< HEAD
-        for i in range(len(self.last_few_positions)):
-            self.trail_trans[i].set_translation((self.last_few_positions[i]-self.min_position)*scale, self._height(self.last_few_positions[i])*scale)
-
-=======
->>>>>>> dan-dev
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
 if  __name__ == '__main__':
     # test the environment with random actions
 
-<<<<<<< HEAD
-    env = MountainCarEnv(trailer=True)
-=======
     env = MountainCarEnv(trailer=True, show_velo=True)
->>>>>>> dan-dev
     state = env.reset()
     is_reset = False
     for t in range(100000):
@@ -207,12 +186,7 @@ if  __name__ == '__main__':
 
         action = env.action_space.sample()
         next_state, reward, done, info = env.step(action)
-<<<<<<< HEAD
-        env.render()
-=======
         env.render(action_idx=action)
->>>>>>> dan-dev
 
         if done:
             is_reset = True
-

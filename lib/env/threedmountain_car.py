@@ -25,18 +25,11 @@ class ThreeDMountainCarEnv(gym.Env):
         'video.frames_per_second': 30
     }
 
-<<<<<<< HEAD
-    def __init__(self, trailer=False):
-        self.name = '3d_mountain_car'
-
-        self.trailer = trailer
-=======
     def __init__(self, trailer=False, show_velo=False):
         self.name = '3d_mountain_car'
 
         self.trailer = trailer
         self.show_velo = show_velo
->>>>>>> dan-dev
         self.last_few_positions = []
         self.trail_num = 40
 
@@ -388,16 +381,6 @@ class ThreeDMountainCarEnv(gym.Env):
                     trail.add_attr(trans)
                     self.viewer_orthographic.add_geom(trail)
                     self.trail_trans.append(trans)
-<<<<<<< HEAD
-
-
-        pos_x = self.state[0]
-        pos_y = self.state[1]
-        self.cartrans_orth.set_translation((pos_x-self.min_position_x)*scale, (pos_y-self.min_position_y)*scale)
-
-        for i in range(len(self.last_few_positions)):
-            self.trail_trans[i].set_translation((self.last_few_positions[i][0] - self.min_position_x) * scale, (self.last_few_positions[i][1] - self.min_position_y) * scale)
-=======
                        
                         
         if action_idx is not None or action_vec is not None:
@@ -429,7 +412,6 @@ class ThreeDMountainCarEnv(gym.Env):
         pos_x = self.state[0]
         pos_y = self.state[1]
         self.cartrans_orth.set_translation((pos_x-self.min_position_x)*scale, (pos_y-self.min_position_y)*scale)
->>>>>>> dan-dev
 
         return self.viewer_orthographic.render(return_rgb_array = mode=='rgb_array')
 
@@ -444,11 +426,7 @@ class ThreeDMountainCarEnv(gym.Env):
 if __name__ == "__main__":
     # test the environment with random actions
 
-<<<<<<< HEAD
-    env = ThreeDMountainCarEnv(trailer=True)
-=======
     env = ThreeDMountainCarEnv(trailer=True, show_velo=True)
->>>>>>> dan-dev
     state = env.reset()
     is_reset = False
     for t in range(100000):
@@ -458,11 +436,7 @@ if __name__ == "__main__":
 
         action = env.action_space.sample()
         next_state, reward, done, info = env.step(action)
-<<<<<<< HEAD
-        env.render_orthographic()
-=======
         env.render_orthographic(action_idx=action)
->>>>>>> dan-dev
 
         if done:
             is_reset = True
