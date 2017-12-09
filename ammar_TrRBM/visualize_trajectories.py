@@ -67,11 +67,11 @@ rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_s
 from matplotlib import pyplot as plt
 import numpy as np
 
-plt.plot(range(len(errs)),errs)
-plt.title('FTrRBM reconstruction error')
-plt.xlabel('epoch')
-plt.ylabel('reconstruction error')
-plt.show()
+#plt.plot(range(len(errs)),errs)
+#plt.title('FTrRBM reconstruction error')
+#plt.xlabel('epoch')
+#plt.ylabel('reconstruction error')
+#plt.show()
 
 
 # In[6]:
@@ -102,6 +102,8 @@ def get_source_instances(source_env_str, target_env_str, option_str='random'):
     
     return source_optimal, source_realistic
 
+print('getting source instances')
+
 source_optimal, source_realistic = get_source_instances('2DMountainCar', '3DMountainCar', option_str='random')
 
 
@@ -121,7 +123,8 @@ source_trajectory = source_instances
 
 # In[8]:
 
-print(len(source_instances))
+#print(len(source_instances))
+print('mapping to target instances')
 
 target_mapped = rbm.v2_predict(source_instances[:15000])
 target_mapped = target_scaler.inverse_transform(target_mapped)
@@ -134,7 +137,7 @@ mapped_trajectory = target_mapped
 
 # In[10]:
 
-len(mapped_trajectory)
+#len(mapped_trajectory)
 
 
 # In[ ]:
@@ -165,6 +168,8 @@ mapped_trajectory = np.load('visualize_trajectories/2DMC-3DMC/mapped_trajectory.
 
 # In[14]:
 
+print('starting render')
+
 for t in range(5000):
     
     twoD.state = source_trajectory[t]
@@ -188,7 +193,7 @@ twoD.close()
 # In[ ]:
 
 
-
+print('done')
 
 # In[ ]:
 
