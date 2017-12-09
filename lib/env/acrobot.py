@@ -97,8 +97,8 @@ class AcrobotEnv(core.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def set_state(self, state):
-        self.state = state
+    def set_state(self, obs):
+        self.state = np.array([np.arccos(obs[0]),np.arccos(obs[2]), obs[4], obs[5]])
 
     def _reset(self):
         self.state = self.np_random.uniform(low=-0.1, high=0.1, size=(4,))
