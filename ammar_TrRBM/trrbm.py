@@ -37,7 +37,7 @@ class RBM(object):
     """ represents a 3-way rbm """
 
     def __init__(self, name, v1_size, h_size, v2_size, n_data, batch_size, num_epochs=100, learning_rate=0.1, k=1,
-                 use_tqdm=True, show_err_plt=True, n_factors=50):
+                 use_tqdm=True, show_err_plt=True, n_factors=50, lr_sched='quarter'):
 
         with tf.name_scope("rbm_" + name):
             self.v1_size = v1_size
@@ -60,6 +60,8 @@ class RBM(object):
 
             self.batch_size = batch_size
             self.n_batches = n_data // batch_size  # assume it will be an integer
+            
+            print(n_data, self.batch_size, self.n_batches)
 
             self.num_epochs = num_epochs
             self.learning_rate = learning_rate
@@ -73,6 +75,8 @@ class RBM(object):
 
             self.compute_err = None  # filled in reconstruction error
             self.tf_session = None
+            
+            self.lr_sched = lr_sched
 
             self.cost = []
 
@@ -157,14 +161,24 @@ class RBM(object):
             # catch divergence
             if np.isnan(self.cost[-1]):
                 raise RuntimeError('Training has diverged - lower learning rate!')
-            # early stopping
-            if i > 1 and np.mean(self.cost[-10:-5]) - np.mean(self.cost[-5:]) < np.mean(self.cost[-10:]) * 0.005:
-                counter += 1
-                if counter >= 5:
+              
+
+            # learning rate decay
+            if self.lr_sched == 'plateau':
+                if i > 1 and np.mean(self.cost[-10:-5]) - np.mean(self.cost[-5:]) < np.mean(self.cost[-10:]) * 0.005:
+                    counter += 1
+                    if counter >= 5:
+                        self.learning_rate = self.learning_rate / 2
+                        counter = 0
+            elif self.lr_sched == 'quarter':
+                if i % int(self.num_epochs/4) == 0:
                     self.learning_rate = self.learning_rate / 2
-                    counter = 0
+                 
+            
+            # early stopping
             if self.learning_rate < 1e-10:
                 break
+            
         return self.cost
 
     def one_train_step(self, v1_input, v2_input):
@@ -173,13 +187,16 @@ class RBM(object):
         updates = [self.fweights_v1, self.fweights_v2, self.fweights_h, self.v1_bias, self.v2_bias, self.h_bias]
         err_tot = 0
         for i in range(self.n_batches):
-            np.random.shuffle(v1_input)
-            np.random.shuffle(v2_input)
-            v1_input_list = np.split(v1_input, self.n_batches)
-            v2_input_list = np.split(v2_input, self.n_batches)
+            #np.random.shuffle(v1_input)
+            #np.random.shuffle(v2_input)
+            #v1_input_list = np.split(v1_input, self.n_batches)
+            #v2_input_list = np.split(v2_input, self.n_batches)
+            batch_idx = np.random.choice(range(self.batch_size), size = self.batch_size, replace = False)
+            v1_input_batch = v1_input[batch_idx]
+            v2_input_batch = v2_input[batch_idx]
 
-            self.tf_session.run(updates, feed_dict={self.v1_input: v1_input_list[i], self.v2_input: v2_input_list[i]})
-            err_tot += self.get_cost(v1_input_list[i], v2_input_list[i])
+            self.tf_session.run(updates, feed_dict={self.v1_input: v1_input_batch, self.v2_input: v2_input_batch})
+            err_tot += self.get_cost(v1_input_batch, v2_input_batch)
         return err_tot / (self.batch_size * self.n_batches)
 
     def pcd_k(self):
@@ -187,7 +204,7 @@ class RBM(object):
 
         mcmc_v1, mcmc_v2 = (self.v1_input, self.v2_input)
 
-        start_h = self.prop_v1v2_h(self.v1_input, self.v2_input)
+        start_h = self.sample_h_given_v1v2(self.v1_input, self.v2_input)
         mcmc_h = start_h
 
         for n in range(self.k):
