@@ -9,6 +9,8 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 from gym.envs.classic_control import rendering
+from gym import wrappers
+from datetime import datetime
 
 '''
     Jeremy:
@@ -128,7 +130,7 @@ class ThreeDMountainCarEnv(gym.Env):
         return np.sin(3 * xs)*.45+.55
 
 
-    def _render(self, mode='human', close=False):
+    def render_x(self, mode='human', close=False):
         if close:
             if self.viewer_x is not None:
                 self.viewer_x.close()
@@ -427,6 +429,8 @@ if __name__ == "__main__":
     # test the environment with random actions
 
     env = ThreeDMountainCarEnv(trailer=True, show_velo=True)
+    add_str = datetime.now().time().isoformat()
+    # env = wrappers.Monitor(env, './videos/' + add_str)
     state = env.reset()
     is_reset = False
     for t in range(100000):

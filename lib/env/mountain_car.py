@@ -9,7 +9,8 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 from gym.envs.classic_control import rendering
-
+from gym import wrappers
+from datetime import datetime
 
 class MountainCarEnv(gym.Env):
     metadata = {
@@ -177,6 +178,8 @@ if  __name__ == '__main__':
     # test the environment with random actions
 
     env = MountainCarEnv(trailer=True, show_velo=True)
+    add_str = datetime.now().time().isoformat()
+    # env = wrappers.Monitor(env, './videos/' + add_str)
     state = env.reset()
     is_reset = False
     for t in range(100000):
@@ -187,6 +190,8 @@ if  __name__ == '__main__':
         action = env.action_space.sample()
         next_state, reward, done, info = env.step(action)
         env._render(action_idx=action)
+        # env._render()
+
 
         if done:
             is_reset = True
