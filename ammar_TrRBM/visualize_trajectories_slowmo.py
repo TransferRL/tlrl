@@ -41,7 +41,7 @@ for t in range(5000):
         del threeD.last_few_positions[0]
     threeD.render_orthographic(action_vec=mapped_trajectory[t][8:])
     
-    time.sleep(0.25)
+    time.sleep(0.0)
     
 threeD.close()
 twoD.close()

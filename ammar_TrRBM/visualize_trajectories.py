@@ -13,6 +13,15 @@ sys.path.append('/Users/dangoldberg/Desktop/code/tlrl/lib')
 
 from TrRBM_train_models import *
 
+params_dictionary["TrRBM_hidden_units"] = 300
+params_dictionary["TrRBM_batch_size"] = 2500
+params_dictionary["TrRBM_learning_rate"] = 0.000001
+params_dictionary["TrRBM_num_epochs"] = 300
+params_dictionary["TrRBM_n_factors"] = 80
+params_dictionary["TrRBM_k"] = 1
+params_dictionary["TrRBM_use_tqdm"] = True
+params_dictionary["TrRBM_show_err_plt"] = False
+
 
 # In[3]:
 

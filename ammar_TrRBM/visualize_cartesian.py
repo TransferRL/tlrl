@@ -6,6 +6,7 @@
 import numpy as np
 import sys
 import itertools
+import math
 sys.path.append('/Users/dangoldberg/Desktop/code/tlrl')
 sys.path.append('/Users/dangoldberg/Desktop/code/tlrl/lib')
 
@@ -14,10 +15,10 @@ sys.path.append('/Users/dangoldberg/Desktop/code/tlrl/lib')
 
 from TrRBM_train_models import *
 
-params_dictionary["TrRBM_hidden_units"] = 300
+params_dictionary["TrRBM_hidden_units"] = 150
 params_dictionary["TrRBM_batch_size"] = 100000
 params_dictionary["TrRBM_learning_rate"] = 0.000001
-params_dictionary["TrRBM_num_epochs"] = 35
+params_dictionary["TrRBM_num_epochs"] = 15
 params_dictionary["TrRBM_n_factors"] = 80
 params_dictionary["TrRBM_k"] = 1
 params_dictionary["TrRBM_use_tqdm"] = True
@@ -67,7 +68,8 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
         n_factors=params_dictionary["TrRBM_n_factors"],
         k=params_dictionary["TrRBM_k"],
         use_tqdm=params_dictionary["TrRBM_use_tqdm"],
-        show_err_plt=params_dictionary["TrRBM_show_err_plt"]
+        show_err_plt=params_dictionary["TrRBM_show_err_plt"],
+        lr_sched='plateau'
     )
 
     # train the TrRBM model
@@ -138,6 +140,7 @@ source_optimal, source_realistic = get_source_instances('2DMountainCar', '3DMoun
 source_instances = source_realistic
 
 source_trajectory = source_instances
+source_tiled = np.tile(source_trajectory, [math.ceil(params_dictionary["TrRBM_batch_size"]/source_trajectory.shape[0]),1])[:params_dictionary["TrRBM_batch_size"]]
 
 
 
@@ -146,14 +149,19 @@ source_trajectory = source_instances
 #print(len(source_instances))
 print('mapping to target instances')
 
-rbm.batch_size = source_instances.shape[0]
-target_mapped = rbm.v2_predict(source_instances)
+
+target_mapped = rbm.v2_predict(source_tiled)[:source_trajectory.shape[0]]
 target_mapped = target_scaler.inverse_transform(target_mapped)
 
 
 # In[9]:
 
 mapped_trajectory = target_mapped
+
+del source_tiled
+rbm.tf_session.close()
+import gc
+gc.collect()
 
 
 # In[10]:
@@ -171,7 +179,7 @@ mapped_trajectory = target_mapped
 import pickle
 source_trajectory.dump('visualize_trajectories/2DMC-3DMC/source_trajectory.p')
 mapped_trajectory.dump('visualize_trajectories/2DMC-3DMC/mapped_trajectory.p')
-
+print('trajectories saved')
 
 # In[12]:
 
