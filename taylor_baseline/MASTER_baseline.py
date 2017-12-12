@@ -14,7 +14,6 @@ import pickle
 import deepq
 from lib.env.cartpole import CartPoleEnv
 from lib.env.threedcartpole import ThreeDCartPoleEnv
-from lib.env.acrobot import AcrobotEnv
 
 # Create model
 def neural_net(x, weights, biases):
@@ -168,7 +167,7 @@ def train_model(num_steps=10000, batch_size=100, display_step=100, source_env=Mo
         target_actions = target_env.action_space.n  # 5
 
         mse_state_mappings = np.zeros((source_states,) * target_states)  # 2 by 2 by 2 by 2
-        mse_action_mappings = np.ndarray(shape=(target_actions, source_actions, pow(source_states, target_states)))  # 5 by 3 by 16
+        mse_action_mappings = np.ndarray(shape=(target_actions, source_actions, pow(target_states, source_states)))  # 5 by 3 by 16
         mse_action_mappings.fill(-1)
 
         state_count = 0
@@ -227,37 +226,17 @@ def train_model(num_steps=10000, batch_size=100, display_step=100, source_env=Mo
             print(mse_state_mappings[target_states_list])
             count += 1
 
-        # print('x,x,x,x: {}'.format(mse_state_mappings[0][0][0][0]))
-        # print('x,x,x,x_dot: {}'.format(mse_state_mappings[0][0][0][1]))
-        # print('x,x,x_dot,x: {}'.format(mse_state_mappings[0][0][1][0]))
-        # print('x,x,x_dot,x_dot: {}'.format(mse_state_mappings[0][0][1][1]))
-        # print('x,x_dot,x,x: {}'.format(mse_state_mappings[0][1][0][0]))
-        # print('x,x_dot,x,x_dot: {}'.format(mse_state_mappings[0][1][0][1]))
-        # print('x,x_dot,x_dot,x: {}'.format(mse_state_mappings[0][1][1][0]))
-        # print('x,x_dot,x_dot,x_dot: {}'.format(mse_state_mappings[0][1][1][1]))
-        # print('x_dot,x,x,x: {}'.format(mse_state_mappings[1][0][0][0]))
-        # print('x_dot,x,x,x_dot: {}'.format(mse_state_mappings[1][0][1][0]))
-        # print('x_dot,x,x_dot,x: {}'.format(mse_state_mappings[1][0][1][1]))
-        # print('x_dot,x,x_dot,x_dot: {}'.format(mse_state_mappings[1][1][0][0]))
-        # print('x_dot,x_dot,x,x: {}'.format(mse_state_mappings[1][0][0][1]))
-        # print('x_dot,x_dot,x,x_dot: {}'.format(mse_state_mappings[1][1][0][1]))
-        # print('x_dot,x_dot,x_dot,x: {}'.format(mse_state_mappings[1][1][1][0]))
-        # print('x_dot,x_dot,x_dot,x_dot: {}'.format(mse_state_mappings[1][1][1][1]))
-
-        with open('./data/mse_state_mappings.pkl', 'wb') as file:
+        with open('./data/mse_state_mappings_3d_2d.pkl', 'wb') as file:
             pickle.dump(mse_state_mappings, file)
 
-        with open('./data/mse_action_mappings.pkl', 'wb') as file:
+        with open('./data/mse_action_mappings_3d_2d.pkl', 'wb') as file:
             pickle.dump(mse_action_mappings, file)
 
         print("Done exporting MSE file")
 
 
-
-
-
 if __name__ == '__main__':
     # train_model(num_steps=10000, batch_size=100, display_step=100, source_env=MountainCarEnv(),
     #             target_env=ThreeDMountainCarEnv())
-    train_model(num_steps=10000, batch_size=100, display_step=100, source_env=MountainCarEnv(),
-                target_env=AcrobotEnv())
+    train_model(num_steps=10000, batch_size=100, display_step=100, source_env=ThreeDMountainCarEnv(),
+                target_env=MountainCarEnv())

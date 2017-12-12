@@ -17,6 +17,9 @@ if "./" not in sys.path:
 with open('data/mse_state_mappings.pkl', 'rb') as file:
     mse_state_mappings = pickle.load(file)
 
+with open('data/mse_state_mappings_3d_2d.pkl', 'rb') as file:
+    mse_state_mappings_3d_2d = pickle.load(file)
+
 with open('data/mse_action_mappings.pkl', 'rb') as file:
     mse_action_mappings = pickle.load(file)
 
@@ -31,6 +34,7 @@ pprint.pprint(historic_predictor)
 print(np.shape(mse_state_mappings))
 print(np.shape(mse_action_mappings))
 
+TOP = 3
 env = ThreeDMountainCarEnv()
 
 # Feature Preprocessing: Normalize to zero mean and unit variance
@@ -131,7 +135,7 @@ def make_epsilon_greedy_policy(estimator, epsilon, nA):
 
 
 def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, epsilon_decay=1.0, transfer=True,
-               render=True):
+               render=True, theta=1.0, theta_discount_factor=1.0):
     """
     Q-Learning algorithm for fff-policy TD control using Function Approximation.
     Finds the optimal greedy policy while following an epsilon-greedy policy.
@@ -172,6 +176,7 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, e
         # Only used for SARSA, not Q-Learning
         next_action = None
 
+        theta = theta*theta_discount_factor
         # One step in the environment
         for t in itertools.count():
 
@@ -193,6 +198,13 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, e
             # TD Update
             q_values_next = estimator.predict(next_state)
 
+            # Get the best mapping for
+            state_map_2d = np.zeros((TOP, len(mse_state_mappings)))
+            top_indices = np.argpartition(np.ndarray.flatten(mse_state_mappings_3d_2d), TOP)[:TOP]
+            for i, index in enumerate(top_indices):
+                state_map_2d[i][0] = np.floor(index/len(mse_state_mappings_3d_2d))
+                state_map_2d[i][1] = np.mod(index, len(mse_state_mappings_3d_2d))
+
             if transfer:
                 q_values_historic = np.zeros(env.action_space.n)
 
@@ -206,11 +218,15 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, e
                     for source_action in range(len(mse_action_mappings[current_action])):
                         x, x_dot, y, y_dot = state
                         mse = np.mean(mse_action_mappings[current_action][source_action])
-                        q_values_historic[current_action] += historic_predictor([x, x_dot])[source_action]*(1/sum)*(1/mse)
-                        q_values_historic[current_action] += historic_predictor([y, y_dot])[source_action]*(1/sum)*(1/mse)
+
+                        for map in state_map_2d:
+                            mapped = [state[int(i)] for i in map]
+                            q_values_historic[current_action] += historic_predictor(mapped)[source_action]*(1/sum)*(1/mse)
+
+                        q_values_historic /= len(state_map_2d)
 
                 # Historic update
-                q_values_next += q_values_historic
+                q_values_next += theta*q_values_historic
 
             # Use this code for Q-Learning
             # Q-Value TD Target
@@ -233,6 +249,10 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, e
             if done:
                 break
 
+            if t > 100000:
+                print("More than 100k steps")
+                break
+
             state = next_state
 
     return stats
@@ -240,10 +260,12 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.5, e
 
 estimator = Estimator()
 
-stats = q_learning(env, estimator, 100, epsilon=0.0, transfer=False, render=False)
+stats = q_learning(env, estimator, 100, epsilon=0.0, transfer=True, render=False, theta=0.5)
 print(stats.episode_rewards)
 
-stats2 = q_learning(env, estimator, 100, epsilon=0.0, transfer=True, render=False)
+estimator = Estimator()
+
+stats2 = q_learning(env, estimator, 100, epsilon=0.0, transfer=False, render=False)
 print(stats2.episode_rewards)
 
 plotting.plot_two_episode_stats([stats, stats2], smoothing_window=25)
