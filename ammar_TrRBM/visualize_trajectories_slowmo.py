@@ -20,7 +20,7 @@ twoD = ENVS_DICTIONARY['2DMountainCar'](trailer=True)
 # In[13]:
 
 source_trajectory = np.load('visualize_trajectories/2DMC-3DMC/source_trajectory.p')
-mapped_trajectory = np.load('visualize_trajectories/2DMC-3DMC/mapped_trajectory.p')
+mapped_trajectory = np.load('visualize_trajectories/2DMC-3DMC/bigbatch_trajectory.p')
 
 
 # In[14]:

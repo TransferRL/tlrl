@@ -7,12 +7,14 @@ import numpy as np
 import sys
 import itertools
 import math
+from matplotlib import pyplot as plt
+import pickle
+import gc
+
 sys.path.append('/Users/dangoldberg/Desktop/code/tlrl')
 sys.path.append('/Users/dangoldberg/Desktop/code/tlrl/lib')
 
-
-# In[2]:
-
+from envs import *
 from TrRBM_train_models import *
 
 params_dictionary["TrRBM_hidden_units"] = 150
@@ -86,9 +88,6 @@ rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_s
 
 # In[5]:
 
-from matplotlib import pyplot as plt
-import numpy as np
-
 #plt.plot(range(len(errs)),errs)
 #plt.title('FTrRBM reconstruction error')
 #plt.xlabel('epoch')
@@ -160,7 +159,6 @@ mapped_trajectory = target_mapped
 
 del source_tiled
 rbm.tf_session.close()
-import gc
 gc.collect()
 
 
@@ -176,14 +174,12 @@ gc.collect()
 
 # In[11]:
 
-import pickle
 source_trajectory.dump('visualize_trajectories/2DMC-3DMC/source_trajectory.p')
 mapped_trajectory.dump('visualize_trajectories/2DMC-3DMC/mapped_trajectory.p')
 print('trajectories saved')
 
 # In[12]:
 
-from envs import *
 
 threeD = ENVS_DICTIONARY['3DMountainCar'](trailer=True, show_velo=True)
 twoD = ENVS_DICTIONARY['2DMountainCar'](trailer=True)
