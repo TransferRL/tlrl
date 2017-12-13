@@ -68,7 +68,7 @@ def train_transfer_mapping(source_env_str, target_env_str, option_str='random'):
 
 # In[4]:
 
-rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_scaler = train_transfer_mapping('3DMountainCar', '3DMountainCar', option_str='random')
+rbm, errs, source_action_encoder, target_action_encoder, source_scaler, target_scaler = train_transfer_mapping('2DMountainCar', '3DMountainCar', option_str='random')
 
 
 # In[5]:
@@ -89,7 +89,7 @@ def get_source_instances(source_env_str, target_env_str, option_str='random'):
 
     source_random_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + option_str + '_instances.pkl'
     target_random_path = ENVS_PATH_DICTIONARY[target_env_str]['instances_path'] + option_str + '_instances.pkl'
-    source_optimal_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'realistic_instances.pkl'
+    source_optimal_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'optimal_instances.pkl'
     source_realistic_path = ENVS_PATH_DICTIONARY[source_env_str]['instances_path'] + 'realistic_instances.pkl'
     
     target_env = ENVS_PATH_DICTIONARY[target_env_str]['env']
@@ -113,7 +113,7 @@ def get_source_instances(source_env_str, target_env_str, option_str='random'):
 
 print('getting source instances')
 
-source_optimal, source_realistic = get_source_instances('3DMountainCar', '3DMountainCar', option_str='random')
+source_optimal, source_realistic = get_source_instances('2DMountainCar', '3DMountainCar', option_str='random')
 
 
 # In[ ]:
@@ -182,10 +182,10 @@ print('starting render')
 for t in range(5000):
     
     twoD.state = source_trajectory[t]
-    twoD.last_few_positions.append((source_trajectory[t][0], mapped_trajectory[t][1]))
+    twoD.last_few_positions.append((source_trajectory[t][0]))
     if len(twoD.last_few_positions) == twoD.trail_num+1:
         del twoD.last_few_positions[0]
-    twoD.render_orthographic(action_vec=source_trajectory[t][8:])
+    twoD._render(action_vec=source_trajectory[t][8:])
 
     threeD.state = mapped_trajectory[t]
     threeD.last_few_positions.append((mapped_trajectory[t][0], mapped_trajectory[t][1]))
